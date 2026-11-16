@@ -16,7 +16,7 @@ The Unreal repository remains a separate, unchanged implementation.
 | Discovery | Schema-v1, sender-only reply, opt-in remote disclosure, rate/page/chunk bounds, local API, read-only cached inventory | Existing Python/Node clients and native player; no hardware enumeration/preparation/play in query |
 | Direct PCM | Immutable buffers, bounded WAV preparation, channel mapping, rate conversion, loop/EOF/drain/cancellation | Native offline/lifetime/cancel/fail-closed tests; physical channels/fidelity/latency still unverified |
 | Windows backend | WASAPI shared and requested exclusive mode, actual worker state, stable device routing, no fallback | Editor + Mono player tested; physical/exclusive/hot-unplug listening acceptance remains |
-| macOS backend | Core Audio AudioQueue, exact UID routing, discrete channels, hog-mode exclusive requests, device loss/cleanup | **Source implemented but NOT compiled/validated on this Windows host. Mac SDK/runner required.** |
+| macOS backend | Core Audio AudioQueue, exact UID routing, discrete channels, hog-mode exclusive requests, device loss/cleanup | **ARM64 native build/silent tests pass hosted macOS CI; Mac Unity/player, Intel/universal and physical hardware remain unverified.** |
 | Replay/state | AudioLoom-compatible float-first trigger thresholds, observed real start/end counters, unscaled cancellable natural-end replay, OSC state feedback | Synthetic policy traces + actual failed-device/no-false-ack tests; real audible drain/replay acceptance remains |
 | CSV | v1 route compatibility + v2 exact GUID/localFileId source assignment, whole-file preview/stale guards/one Undo | Source assignment/type/hash/concurrent-edit/Undo tests; explicit Apply may load selected assets, never native PCM/transport |
 | Editor workflows | Stage, Objects, Outputs, Playback, CSV, Diagnostics; binding creation, bulk IDs/mute, multi-cue inspector/device/source controls | All panels repaint without startup I/O; prefab override/Undo tests |
@@ -28,9 +28,9 @@ The Unreal repository remains a separate, unchanged implementation.
 
 1. **Physical audio acceptance:** correct real outputs, stereo image, EOF/replay timing,
    device loss, exclusive compatibility and sustained latency/fidelity on target hardware.
-2. **macOS:** compile native source with the macOS SDK, run native/Unity/player tests and
-   physical Core Audio checks. `bash Tools/build_native_macos.sh --install`; CI includes a
-   macOS native job. Check actual published CI results; a workflow definition is not a passing platform result.
+2. **macOS:** ARM64 native compilation/silent CTest passed hosted CI. Run Mac Unity/player,
+   Intel/universal and physical Core Audio checks before certification.
+   `bash Tools/build_native_macos.sh --install`; native-only CI does not certify those.
 3. **Windows IL2CPP:** this editor lacks the Windows IL2CPP module. CLI installation
    reported `ELEVATION_REQUIRED`; no automatic elevation/license acceptance was performed.
    Install the module with administrator approval, then run the provided IL2CPP smoke.

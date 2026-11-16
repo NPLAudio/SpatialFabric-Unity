@@ -3,6 +3,21 @@
 Host: Windows 11, Unity **6000.6.9f1**, MSVC 2022 x64 / Windows SDK 10.0.26100.
 Implementation/deployment checks below do not certify physical sound or untested platforms.
 
+## Git publication / hosted CI addendum
+
+Repositories are published with reciprocal README links. Hosted run
+[43886108349](https://github.com/NPLAudio/SpatialFabric-Unity/actions/runs/43886108349)
+on source commit `04ee362` passed **Windows, Ubuntu and macOS** portable/native jobs.
+Each ran 16 layout/provenance checks, 74 actual-source portable checks and CMake/CTest
+native build/silent tests. The Mac runner was **macos-26-arm64 / AppleClang 21**: this is
+real ARM64 Core Audio native compilation and silent native test evidence, **not** a Unity
+Mac player, Intel/universal build, working-device playback or hardware certification.
+Interop contract CI also passed; generated fixtures/checksums now use canonical LF bytes
+across Git checkouts. Source binaries, editor state and local reports remain excluded.
+
+The Windows-host results below are the earlier local record, not relabeled hosted Unity
+runs. Licensed Unity tests remain a separate manual/self-hosted workflow.
+
 ## Current measured gates
 
 | Gate | Measured result |
@@ -95,9 +110,9 @@ Test-only smoke helpers are not dependencies required by the distributable sampl
 
 ## Explicit external/blocked gates
 
-- **Core Audio source is implemented but NOT compiled/tested on this Windows host.**
-  No macOS SDK/runner is available. Universal build script and macOS native CI definition
-  do not count as a passing compile, Unity player or physical device result.
+- **Core Audio ARM64 native compilation/silent tests now pass hosted macOS CI** (addendum
+  above); they were not run on this Windows host. Mac Unity/player, Intel/universal and
+  real hardware behavior are still unverified. A native job does not certify those gates.
 - **IL2CPP was attempted, not passed.** Unity reported that Windows IL2CPP support is not
   installed. CLI dry-run identified the module; install with `--no-elevate` returned
   `ELEVATION_REQUIRED`. No automatic elevation/license acceptance occurred. With approved

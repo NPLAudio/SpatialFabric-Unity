@@ -48,8 +48,9 @@ archives and local validation logs are not committed; installable artifacts are 
 
 Runtime dependencies are Unity engine modules only, not a third-party OSC/audio runtime.
 The native plugin bypasses Unity AudioSource/mixer. WebGL/Linux hardware output is not
-advertised. Core Audio source/build scripts are provided, but **not compiled or validated
-on this Windows host**. See [Native/README.md](Native/README.md).
+advertised. Core Audio **ARM64 native compilation and silent tests now pass hosted macOS CI**;
+Mac Unity/player, Intel/universal and physical audio acceptance remain unverified.
+See [Native/README.md](Native/README.md) and the validation addendum.
 
 ## Editor / routing
 

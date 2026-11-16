@@ -23,7 +23,11 @@ MSVC 2022 x64 + Windows SDK; `--vs` overrides install location. Temporary build 
 DLL/tests are outside Git. Local plugin/importer are installed under Runtime/Plugins/x86_64
 and ignored. Target machines require the MSVC runtime.
 
-## macOS — source implemented, NOT locally compiled/certified
+## macOS — ARM64 native CI passes; Unity/hardware acceptance remains
+
+[Hosted run 43886108349](https://github.com/NPLAudio/SpatialFabric-Unity/actions/runs/43886108349)
+compiled with AppleClang 21 on macos-26-arm64 and passed native CTest plus portable checks.
+This is not a Mac Unity player, Intel/universal or real-device playback result.
 
 `src/core_audio.inc` supplies AudioQueue output on an exact Core Audio UID, explicit
 discrete channel order, observed actual worker lifecycle, cancellation/drain/device-loss
@@ -37,9 +41,9 @@ bash Tools/build_native_macos.sh --install
 ```
 
 Builds arm64/x86_64 universal library, runs silent native tests, installs macOS-only
-importer under Runtime/Plugins/macOS. This Windows host has no macOS SDK; code review,
-guarded Windows compilation and a CI definition are **not** a passing macOS compile or
-hardware result. Do not claim support certification until a Mac runner actually passes.
+importer under Runtime/Plugins/macOS. This Windows host has no macOS SDK. Hosted ARM64
+native compile/silent tests now pass as linked above; Mac Unity/player, Intel/universal
+and physical hardware acceptance still need actual results before support certification.
 
 ## ABI / safety
 
