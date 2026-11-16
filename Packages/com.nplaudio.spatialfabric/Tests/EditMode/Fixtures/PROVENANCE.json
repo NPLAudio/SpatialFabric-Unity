@@ -1,0 +1,10 @@
+{
+  "contract": "SpatialFabric interoperability v1",
+  "source": "SpatialFabric-Interop",
+  "sha256": {
+    "Fixtures/osc-v1.json": "f735114d85ade9fb1f249128e54425761489bd554bd7ddce0a45907ea44690d6",
+    "Fixtures/coordinates-v1.json": "494472e6c17aba96ffc0c182cd74430271c162ae3837a81ca083d95b38da9e7e",
+    "Fixtures/custom-v1.json": "1473548d2897f830f0b70af35f8eddbb4e629639dd77c2d50f8aad1b17cfee55",
+    "Schemas/scene-v1.schema.json": "39e4c23da585991f1f53d63cc94a19397834657253405f7172b093c8523fbeee"
+  }
+}

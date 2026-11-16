@@ -1,0 +1,32 @@
+name: Licensed Unity validation
+on:
+  workflow_dispatch:
+    inputs:
+      editor_path:
+        description: Installed, licensed Unity executable on the self-hosted runner
+        required: true
+        default: 'C:/Program Files/Unity/Hub/Editor/6000.6.9f1/Editor/Unity.exe'
+permissions:
+  contents: read
+jobs:
+  unity:
+    runs-on: [self-hosted, Windows, Unity]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - name: Build native plugin and run silent ABI tests
+        run: python Tools/build_native.py --install
+      - name: Require actual passing EditMode and PlayMode XML
+        env:
+          UNITY_EDITOR_PATH: ${{ inputs.editor_path }}
+        run: python Tools/validate_unity.py --unity "$env:UNITY_EDITOR_PATH" --output TestResults/unity --generate-example --graphics --require-native
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Unity-test-results
+          path: |
+            TestResults/unity/*.xml
+            TestResults/unity/validation.json
+# Intentionally manual. Never execute fork PRs on a licensed self-hosted workstation.

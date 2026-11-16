@@ -1,0 +1,29 @@
+# Unity generated project state
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]in/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+[Bb]uild/
+[Bb]uilds/
+.vs/
+.idea/
+*.csproj
+!Tools/CoreChecks/CoreChecks.csproj
+*.sln
+*.user
+*.pidb
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+__pycache__/
+*.pyc
+dist/
+# Locally built native output (build/install via Tools/build_native.py)
+Packages/com.nplaudio.spatialfabric/Runtime/Plugins/x86_64/*.dll*
+Packages/com.nplaudio.spatialfabric/Runtime/Plugins/macOS/*.dylib*
+TestResults/
+.pi/
+.DS_Store

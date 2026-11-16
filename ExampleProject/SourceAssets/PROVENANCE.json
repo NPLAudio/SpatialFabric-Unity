@@ -1,0 +1,11 @@
+{
+  "source": "NPLAudio/SpatialFabric v2.1.0 original room plan and procedural WAVs",
+  "license": "MIT for original content; no Unreal/Epic packages copied",
+  "units": "layout front/right/up centimeters; builder maps to Unity Z/X/Y meters",
+  "sha256": {
+    "SW_SF_MonoCue.wav": "1d9cf57e486de674c9c8318bd9328331fe4441c1e6349367e079a258a56acf15",
+    "SW_SF_StereoLoop.wav": "05a13315a713c693823eec5b37f97e8e9828ca00d82458d72decc794a5112721",
+    "SW_SF_ReplayCue.wav": "1455e1f6b42a8fec49451f0f2be7b37d99941f2a2b3ab39900c5b8ac771a275d",
+    "RoomLayout.json": "50d5705f187a95578c00e951d2b500d70fdc114f97a5de48c8e17bf9476fb6f5"
+  }
+}

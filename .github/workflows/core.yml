@@ -1,0 +1,26 @@
+name: Portable contracts and transport
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  core:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '9.0.x'
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - name: Package boundaries and immutable fixture hashes
+        run: python -m unittest discover -s Tools -p "test_*.py"
+      - name: Actual package OSC, WAV and observed-state/replay policy
+        run: dotnet run --project Tools/CoreChecks/CoreChecks.csproj -- Packages/com.nplaudio.spatialfabric/Tests/EditMode/Fixtures/osc-v1.json
+      - name: Configure portable native renderer and silent ABI tests
+        run: cmake -S Native -B Native/build -DCMAKE_BUILD_TYPE=Release
+      - run: cmake --build Native/build --config Release
+      - run: ctest --test-dir Native/build -C Release --output-on-failure

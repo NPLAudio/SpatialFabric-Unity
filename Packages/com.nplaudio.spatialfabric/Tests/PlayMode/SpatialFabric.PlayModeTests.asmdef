@@ -1,0 +1,7 @@
+{
+  "name": "SpatialFabric.PlayModeTests",
+  "rootNamespace": "NPLAudio.SpatialFabric.Tests",
+  "references": ["SpatialFabric.Runtime"],
+  "optionalUnityReferences": ["TestAssemblies"],
+  "autoReferenced": false
+}

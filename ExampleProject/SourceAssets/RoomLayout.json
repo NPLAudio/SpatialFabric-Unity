@@ -1,0 +1,790 @@
+{
+  "format": "SpatialFabric.Unity.RoomPlan/1",
+  "boxes": [
+    {
+      "name": "Gallery foundation",
+      "position": [
+        -275,
+        1200,
+        -20
+      ],
+      "size": [
+        3050,
+        4340,
+        40
+      ],
+      "material": "floor",
+      "collision": true
+    },
+    {
+      "name": "Hall west wall",
+      "position": [
+        -1760,
+        1200,
+        180
+      ],
+      "size": [
+        20,
+        4340,
+        360
+      ],
+      "material": "wall",
+      "collision": true
+    },
+    {
+      "name": "Hall end -960",
+      "position": [
+        -1480,
+        -960,
+        180
+      ],
+      "size": [
+        560,
+        20,
+        360
+      ],
+      "material": "wall",
+      "collision": true
+    },
+    {
+      "name": "Hall end 3360",
+      "position": [
+        -1480,
+        3360,
+        180
+      ],
+      "size": [
+        560,
+        20,
+        360
+      ],
+      "material": "wall",
+      "collision": true
+    },
+    {
+      "name": "Hall ceiling",
+      "position": [
+        -1480,
+        1200,
+        365
+      ],
+      "size": [
+        560,
+        4340,
+        10
+      ],
+      "material": "ceiling",
+      "collision": true
+    },
+    {
+      "name": "Spatial back wall",
+      "position": [
+        1210,
+        0,
+        450
+      ],
+      "size": [
+        20,
+        1920,
+        900
+      ],
+      "material": "wall",
+      "collision": true
+    },
+    {
+      "name": "Spatial side -960",
+      "position": [
+        0,
+        -960,
+        450
+      ],
+      "size": [
+        2400,
+        20,
+        900
+      ],
+      "material": "wall",
+      "collision": true
+    },
+    {
+      "name": "Spatial side 960",
+      "position": [
+        0,
+        960,
+        450
+      ],
+      "size": [
+        2400,
+        20,
+        900
+      ],
+      "material": "wall",
+      "collision": true
+    },
+    {
+      "name": "Spatial ceiling",
+      "position": [
+        0,
+        0,
+        905
+      ],
+      "size": [
+        2400,
+        1920,
+        10
+      ],
+      "material": "ceiling",
+      "collision": true
+    },
+    {
+      "name": "Playback back wall",
+      "position": [
+        -190,
+        2150,
+        210
+      ],
+      "size": [
+        20,
+        2400,
+        420
+      ],
+      "material": "wall",
+      "collision": true
+    },
+    {
+      "name": "Playback partition 1760",
+      "position": [
+        -700,
+        1760,
+        210
+      ],
+      "size": [
+        1000,
+        20,
+        420
+      ],
+      "material": "wall",
+      "collision": true
+    },
+    {
+      "name": "Playback partition 2560",
+      "position": [
+        -700,
+        2560,
+        210
+      ],
+      "size": [
+        1000,
+        20,
+        420
+      ],
+      "material": "wall",
+      "collision": true
+    },
+    {
+      "name": "Playback partition 3360",
+      "position": [
+        -700,
+        3360,
+        210
+      ],
+      "size": [
+        1000,
+        20,
+        420
+      ],
+      "material": "wall",
+      "collision": true
+    },
+    {
+      "name": "Playback ceiling",
+      "position": [
+        -700,
+        2150,
+        425
+      ],
+      "size": [
+        1000,
+        2400,
+        10
+      ],
+      "material": "ceiling",
+      "collision": true
+    },
+    {
+      "name": "Spatial motion door left",
+      "position": [
+        -1200,
+        -550.0,
+        450.0
+      ],
+      "size": [
+        20,
+        800.0,
+        900
+      ],
+      "material": "wall",
+      "collision": true
+    },
+    {
+      "name": "Spatial motion door right",
+      "position": [
+        -1200,
+        550.0,
+        450.0
+      ],
+      "size": [
+        20,
+        800.0,
+        900
+      ],
+      "material": "wall",
+      "collision": true
+    },
+    {
+      "name": "Spatial motion lintel",
+      "position": [
+        -1200,
+        0,
+        590.0
+      ],
+      "size": [
+        20,
+        300,
+        620
+      ],
+      "material": "wall",
+      "collision": true
+    },
+    {
+      "name": "Spatial motion threshold",
+      "position": [
+        -1190,
+        0,
+        1
+      ],
+      "size": [
+        80,
+        270,
+        2
+      ],
+      "material": "accent0",
+      "collision": false
+    },
+    {
+      "name": "Mono hit door left",
+      "position": [
+        -1200,
+        1100.0,
+        210.0
+      ],
+      "size": [
+        20,
+        300.0,
+        420
+      ],
+      "material": "wall",
+      "collision": true
+    },
+    {
+      "name": "Mono hit door right",
+      "position": [
+        -1200,
+        1600.0,
+        210.0
+      ],
+      "size": [
+        20,
+        300.0,
+        420
+      ],
+      "material": "wall",
+      "collision": true
+    },
+    {
+      "name": "Mono hit lintel",
+      "position": [
+        -1200,
+        1350,
+        350.0
+      ],
+      "size": [
+        20,
+        200,
+        140
+      ],
+      "material": "wall",
+      "collision": true
+    },
+    {
+      "name": "Mono hit threshold",
+      "position": [
+        -1190,
+        1350,
+        1
+      ],
+      "size": [
+        80,
+        170,
+        2
+      ],
+      "material": "accent1",
+      "collision": false
+    },
+    {
+      "name": "Stereo groove door left",
+      "position": [
+        -1200,
+        1900.0,
+        210.0
+      ],
+      "size": [
+        20,
+        300.0,
+        420
+      ],
+      "material": "wall",
+      "collision": true
+    },
+    {
+      "name": "Stereo groove door right",
+      "position": [
+        -1200,
+        2400.0,
+        210.0
+      ],
+      "size": [
+        20,
+        300.0,
+        420
+      ],
+      "material": "wall",
+      "collision": true
+    },
+    {
+      "name": "Stereo groove lintel",
+      "position": [
+        -1200,
+        2150,
+        350.0
+      ],
+      "size": [
+        20,
+        200,
+        140
+      ],
+      "material": "wall",
+      "collision": true
+    },
+    {
+      "name": "Stereo groove threshold",
+      "position": [
+        -1190,
+        2150,
+        1
+      ],
+      "size": [
+        80,
+        170,
+        2
+      ],
+      "material": "accent2",
+      "collision": false
+    },
+    {
+      "name": "Replay cue door left",
+      "position": [
+        -1200,
+        2700.0,
+        210.0
+      ],
+      "size": [
+        20,
+        300.0,
+        420
+      ],
+      "material": "wall",
+      "collision": true
+    },
+    {
+      "name": "Replay cue door right",
+      "position": [
+        -1200,
+        3200.0,
+        210.0
+      ],
+      "size": [
+        20,
+        300.0,
+        420
+      ],
+      "material": "wall",
+      "collision": true
+    },
+    {
+      "name": "Replay cue lintel",
+      "position": [
+        -1200,
+        2950,
+        350.0
+      ],
+      "size": [
+        20,
+        200,
+        140
+      ],
+      "material": "wall",
+      "collision": true
+    },
+    {
+      "name": "Replay cue threshold",
+      "position": [
+        -1190,
+        2950,
+        1
+      ],
+      "size": [
+        80,
+        170,
+        2
+      ],
+      "material": "accent3",
+      "collision": false
+    },
+    {
+      "name": "Stage outline Y -750",
+      "position": [
+        0,
+        -750,
+        1
+      ],
+      "size": [
+        2000,
+        4,
+        2
+      ],
+      "material": "grid",
+      "collision": false
+    },
+    {
+      "name": "Stage outline Y 750",
+      "position": [
+        0,
+        750,
+        1
+      ],
+      "size": [
+        2000,
+        4,
+        2
+      ],
+      "material": "grid",
+      "collision": false
+    },
+    {
+      "name": "Stage outline X -1000",
+      "position": [
+        -1000,
+        0,
+        1
+      ],
+      "size": [
+        4,
+        1500,
+        2
+      ],
+      "material": "grid",
+      "collision": false
+    },
+    {
+      "name": "Stage outline X 1000",
+      "position": [
+        1000,
+        0,
+        1
+      ],
+      "size": [
+        4,
+        1500,
+        2
+      ],
+      "material": "grid",
+      "collision": false
+    }
+  ],
+  "rooms": [
+    {
+      "name": "Spatial motion",
+      "bounds": [
+        -1200,
+        1200,
+        -950,
+        950
+      ],
+      "height": 900,
+      "doorWidth": 300,
+      "centerRight": 0
+    },
+    {
+      "name": "Mono hit",
+      "bounds": [
+        -1200,
+        -200,
+        950,
+        1750
+      ],
+      "height": 420,
+      "doorWidth": 200,
+      "centerRight": 1350
+    },
+    {
+      "name": "Stereo groove",
+      "bounds": [
+        -1200,
+        -200,
+        1750,
+        2550
+      ],
+      "height": 420,
+      "doorWidth": 200,
+      "centerRight": 2150
+    },
+    {
+      "name": "Replay cue",
+      "bounds": [
+        -1200,
+        -200,
+        2550,
+        3350
+      ],
+      "height": 420,
+      "doorWidth": 200,
+      "centerRight": 2950
+    }
+  ],
+  "spawn": [
+    -1480,
+    -600,
+    105
+  ],
+  "yaw": 55,
+  "floorSamples": [
+    {
+      "name": "hall -700",
+      "point": [
+        -1480,
+        -700
+      ]
+    },
+    {
+      "name": "hall 0",
+      "point": [
+        -1480,
+        0
+      ]
+    },
+    {
+      "name": "hall 1350",
+      "point": [
+        -1480,
+        1350
+      ]
+    },
+    {
+      "name": "hall 2150",
+      "point": [
+        -1480,
+        2150
+      ]
+    },
+    {
+      "name": "hall 2950",
+      "point": [
+        -1480,
+        2950
+      ]
+    },
+    {
+      "name": "hall 3200",
+      "point": [
+        -1480,
+        3200
+      ]
+    },
+    {
+      "name": "Spatial motion",
+      "point": [
+        0.0,
+        0
+      ]
+    },
+    {
+      "name": "Mono hit",
+      "point": [
+        -700.0,
+        1350
+      ]
+    },
+    {
+      "name": "Stereo groove",
+      "point": [
+        -700.0,
+        2150
+      ]
+    },
+    {
+      "name": "Replay cue",
+      "point": [
+        -700.0,
+        2950
+      ]
+    }
+  ],
+  "doors": [
+    {
+      "name": "Spatial motion",
+      "start": [
+        -1450,
+        0,
+        100
+      ],
+      "end": [
+        -1000,
+        0,
+        100
+      ]
+    },
+    {
+      "name": "Mono hit",
+      "start": [
+        -1450,
+        1350,
+        100
+      ],
+      "end": [
+        -1000,
+        1350,
+        100
+      ]
+    },
+    {
+      "name": "Stereo groove",
+      "start": [
+        -1450,
+        2150,
+        100
+      ],
+      "end": [
+        -1000,
+        2150,
+        100
+      ]
+    },
+    {
+      "name": "Replay cue",
+      "start": [
+        -1450,
+        2950,
+        100
+      ],
+      "end": [
+        -1000,
+        2950,
+        100
+      ]
+    }
+  ],
+  "walls": [
+    {
+      "name": "hall west",
+      "start": [
+        -1500,
+        0,
+        100
+      ],
+      "end": [
+        -1900,
+        0,
+        100
+      ]
+    },
+    {
+      "name": "hall south",
+      "start": [
+        -1480,
+        -800,
+        100
+      ],
+      "end": [
+        -1480,
+        -1100,
+        100
+      ]
+    },
+    {
+      "name": "hall north",
+      "start": [
+        -1480,
+        3200,
+        100
+      ],
+      "end": [
+        -1480,
+        3550,
+        100
+      ]
+    },
+    {
+      "name": "mono/stereo divider",
+      "start": [
+        -650,
+        1500,
+        100
+      ],
+      "end": [
+        -650,
+        1950,
+        100
+      ]
+    },
+    {
+      "name": "stereo/replay divider",
+      "start": [
+        -650,
+        2300,
+        100
+      ],
+      "end": [
+        -650,
+        2750,
+        100
+      ]
+    },
+    {
+      "name": "spatial/mono divider",
+      "start": [
+        -650,
+        800,
+        100
+      ],
+      "end": [
+        -650,
+        1150,
+        100
+      ]
+    },
+    {
+      "name": "spatial back",
+      "start": [
+        1000,
+        0,
+        100
+      ],
+      "end": [
+        1400,
+        0,
+        100
+      ]
+    }
+  ]
+}

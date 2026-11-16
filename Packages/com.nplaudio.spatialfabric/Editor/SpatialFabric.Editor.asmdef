@@ -1,0 +1,7 @@
+{
+  "name": "SpatialFabric.Editor",
+  "rootNamespace": "NPLAudio.SpatialFabric.Editor",
+  "references": ["SpatialFabric.Runtime"],
+  "includePlatforms": ["Editor"],
+  "autoReferenced": true
+}

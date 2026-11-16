@@ -1,0 +1,112 @@
+# SpatialFabric for Unity 0.5 — local functional port
+
+SpatialFabric + AudioLoom functionality implemented for Unity: stage/listener mapping,
+explicit bindings and multiple OSC outputs, ADM/Custom protocols, read-only discovery,
+direct-device PCM, replay/state, source-aware CSV, authoring panels and a real four-room
+walking example. **Software completion is not physical/platform certification.**
+See [Docs/PARITY.md](Docs/PARITY.md) and actual evidence in [VALIDATION.md](VALIDATION.md).
+
+## SpatialFabric repositories
+
+| Repository | Purpose |
+|---|---|
+| [SpatialFabric](https://github.com/NPLAudio/SpatialFabric) | Unreal plugin, four-room example and standalone OSC Controller |
+| [SpatialFabric-Unity](https://github.com/NPLAudio/SpatialFabric-Unity) | Unity UPM port, native audio backend and four-room walking showcase |
+| [SpatialFabric-Interop](https://github.com/NPLAudio/SpatialFabric-Interop) | Shared OSC contracts, JSON schemas and golden wire fixtures |
+| [AudioLoom](https://github.com/NPLAudio/AudioLoom) | Legacy standalone Unreal playback repository; access-controlled/private, integrated into SpatialFabric |
+
+Engine implementations share contracts, not engine assemblies. Validation for one engine
+or platform does not certify another.
+
+## Use the room showcase
+
+Open `ExampleProject/` in Unity **6000.6.9f1**, then
+`Assets/SpatialFabricShowcase/Scenes/RoomShowcase.unity`; press **Play**.
+
+Four enclosed rooms share a hallway: spatial motion, warm percussion, stereo groove,
+glass replay. **WASD/mouse**, **Esc** cursor, **E** play room cue, **Q** stop, **X** stop all.
+Real HUD buttons expose cue/loop/replay/routing/OSC controls; no automatic sound/listening.
+Original prepared cues are assigned. See [ExampleProject/README.md](ExampleProject/README.md).
+Visual walls/OSC positions do not spatialize or acoustically isolate direct PCM.
+
+The controller profile is `ExampleProject/OSCControllerProfile.json`. Inputs 8200/9100,
+state monitor 9101, ADM 50019, Custom 9102 avoid Unreal defaults on the same computer.
+The original small SpatialExample scene remains a regression fixture, not the main demo.
+
+## Install the package
+
+Local source: Package Manager → Install package from disk →
+`Packages/com.nplaudio.spatialfabric/package.json`. Close Unity and build/install native
+output first for PCM: `python Tools/build_native.py --install` (MSVC 2022 x64 + Windows SDK).
+
+Local distribution: `python Tools/package_unity.py --include-built-native` creates
+`dist/0.5.0/com.nplaudio.spatialfabric-0.5.0.tgz`, CompleteSource ZIP, manifest and checksums.
+The tarball includes the locally built Windows plugin and an importable four-room sample;
+Package Manager → Install package from tarball, then import **Four-room walking showcase**.
+Git source publication is separate from release publication. Generated native binaries,
+archives and local validation logs are not committed; installable artifacts are built explicitly.
+
+Runtime dependencies are Unity engine modules only, not a third-party OSC/audio runtime.
+The native plugin bypasses Unity AudioSource/mixer. WebGL/Linux hardware output is not
+advertised. Core Audio source/build scripts are provided, but **not compiled or validated
+on this Windows host**. See [Native/README.md](Native/README.md).
+
+## Editor / routing
+
+**Tools → SpatialFabric → Open Window** provides Stage, Objects, Outputs, Playback, CSV
+and Diagnostics panels. Opening panels never starts transports or prepares PCM.
+
+- Stage: dimensions/flips, Off/position-only/position+orientation virtual listener, radar
+  Top/Front/Side/isometric and bounded view-only history. Authored stage never follows.
+- Objects: bind selected scene objects, explicit pose/label, bulk sequential IDs/mute,
+  per-protocol and per-output ID/field overrides, standard multi-object Undo.
+- Outputs: any number of independent ADM/Custom destinations with individual mode, rate,
+  enable and successful-frame change cache. A nonempty list replaces legacy endpoints.
+- Playback: prepared-source/loaded-clip assignment, explicit device refresh/prepare/play/
+  stop/release, loop/replay, actual cached worker/format state, multi-cue inspector.
+- CSV: bounded full-file preview/confirm/one Undo; v1 route compatibility and v2 exact
+  GUID/localFileId source reassignment. Explicit Apply may resolve selected assets, never
+  starts native preparation/devices/transport. See [Docs/RoutingCsv.md](Docs/RoutingCsv.md).
+- Diagnostics: loaded-world references, configured vs bound sockets, errors/identity repair.
+
+Owner scene is the default world. `additionalScenePaths` explicitly opts loaded additive
+scenes into bindings/playback/discovery; unrelated scenes stay excluded. Saved editor
+identity survives reload; live prefab instances get distinct session keys without query
+mutation. Optional additive listener references require explicit stage opt-in too.
+
+Custom XYZ/AED packed/discrete arguments, aliases, fields, ranges and strict preflight
+are documented in [Docs/CustomProtocol.md](Docs/CustomProtocol.md). UDP/change filtering is
+not renderer acknowledgement. Stop OSC never stops PCM; closing the window never stops
+remote audio. Scene/Play/reload/quit lifecycle releases native resources.
+
+## Validate
+
+```sh
+python Tools/build_native.py --install
+dotnet run --project Tools/CoreChecks/CoreChecks.csproj -- Packages/com.nplaudio.spatialfabric/Tests/EditMode/Fixtures/osc-v1.json
+python -m unittest discover -s Tools -p 'test_*.py'
+python Tools/sync_interop.py --check
+python Tools/validate_unity.py --unity "C:/Program Files/Unity/Hub/Editor/6000.6.9f1/Editor/Unity.exe" --graphics --require-native
+python Tools/validate_rooms.py --unity "C:/Program Files/Unity/Hub/Editor/6000.6.9f1/Editor/Unity.exe"
+python Tools/validate_interop.py --unity "C:/Program Files/Unity/Hub/Editor/6000.6.9f1/Editor/Unity.exe" --unreal "../SpatialSandbox/Plugins/SpatialFabric" --rooms
+python Tools/package_unity.py --include-built-native
+python Tools/validate_package.py --unity "C:/Program Files/Unity/Hub/Editor/6000.6.9f1/Editor/Unity.exe" --package dist/0.5.0/com.nplaudio.spatialfabric-0.5.0.tgz
+```
+
+A separate batch `ValidatePersistence.Run` gate exercises saved-scene/additive unload
+without disrupting NUnit's scene. Reports must contain actual nonempty passing checks;
+process exit alone is insufficient. All automatic playback validation is silent/offline
+or intentionally invalid-device. Real listening/latency/exclusive/hot-unplug acceptance
+still requires target hardware.
+
+IL2CPP smoke tooling is supplied (`Tools/validate_player.py --il2cpp`). This editor lacks
+that module; CLI installation reported administrator rights required. Install with user
+approval before claiming IL2CPP passed. Mac native source requires a real Mac SDK/runner.
+
+## Repository boundaries
+
+UPM package under Packages/, example under ExampleProject/, native C ABI under Native/,
+portable/editor/build probes under Tools/. Sibling SpatialFabric-Interop contains shared
+contracts/golden fixtures (vendored with hashes). The existing Unreal repository is intact.
+Generated Library/build state, credentials and locally compiled DLL/dylib files are not
+committed. CompleteSource is filtered; archives/checksums are local development artifacts.

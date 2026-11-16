@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "playback_ip": "127.0.0.1",
+  "playback_port": 9100,
+  "monitor_ip": "127.0.0.1",
+  "monitor_port": 9101,
+  "spatial_ip": "127.0.0.1",
+  "spatial_port": 50019,
+  "tracker_ip": "127.0.0.1",
+  "tracker_ports": [50019, 9102],
+  "query_ip": "127.0.0.1",
+  "query_port": 8200,
+  "query_reply_port": 9011,
+  "object_id": 1,
+  "front": 0.0,
+  "right": 0.0,
+  "up": 0.0,
+  "gain": 1.0,
+  "width": 0.0,
+  "send_hz": 20,
+  "cues": [
+    {"name": "Warm percussion / output 1", "base": "/unity/playback/mono"},
+    {"name": "Stereo groove / matching L-R", "base": "/unity/playback/stereo"},
+    {"name": "Glass / output 2 / replay", "base": "/unity/playback/replay"}
+  ]
+}

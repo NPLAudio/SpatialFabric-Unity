@@ -1,0 +1,8 @@
+{
+  "name": "SpatialFabric.EditModeTests",
+  "rootNamespace": "NPLAudio.SpatialFabric.Tests",
+  "references": ["SpatialFabric.Runtime", "SpatialFabric.Editor"],
+  "includePlatforms": ["Editor"],
+  "optionalUnityReferences": ["TestAssemblies"],
+  "autoReferenced": false
+}
