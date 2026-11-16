@@ -16,6 +16,6 @@ def main():
     path=target/'PROVENANCE.json'
     if args.check:
         if path.read_text()!=manifest:raise SystemExit('Provenance differs')
-    else:path.write_text(manifest,encoding='utf-8')
+    else:path.write_text(manifest,encoding='utf-8',newline='\n')
     print('Interop fixtures verified' if args.check else 'Interop fixtures vendored with SHA-256 provenance')
 if __name__=='__main__':main()
