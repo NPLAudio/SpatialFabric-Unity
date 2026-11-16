@@ -64,8 +64,14 @@ namespace NPLAudio.SpatialFabric
             catch (Exception error) { a.Dispose(); b.Dispose(); LastError = error.Message; return false; }
         }
         public void StopNetworking() { spatial?.Dispose(); playback?.Dispose(); spatial = playback = null; }
-        void OnEnable() { PlaybackEvents.StateChanged += OnPlaybackState; }
-        void OnDisable() { PlaybackEvents.StateChanged -= OnPlaybackState; StopNetworking(); }
+        void OnEnable() { PlaybackEvents.StateChanged += OnPlaybackState; LiveInputEvents.StateChanged += OnLiveState; }
+        void OnDisable() { PlaybackEvents.StateChanged -= OnPlaybackState; LiveInputEvents.StateChanged -= OnLiveState; StopNetworking(); }
+        void OnLiveState(LiveInputCue cue,bool live)
+        {
+            if(!IsListening || !NetworkingAllowed || !ContainsScene(cue.gameObject.scene) || !cue.ValidBase)return;
+            try {spatial.Send(targetIp,monitorPort,new OscMessage(cue.oscBase+"/state",OscArg.Float(live?1:0)));++Sent;}
+            catch(Exception error) when(error is FormatException || error is ArgumentException || error is System.Net.Sockets.SocketException) {LastError=error.Message;}
+        }
         void OnPlaybackState(PlaybackCue cue,bool playing)
         {
             if(!IsListening || !NetworkingAllowed || !ContainsScene(cue.gameObject.scene) || !cue.ValidBase)return;
@@ -145,6 +151,13 @@ namespace NPLAudio.SpatialFabric
                 if (message.Address == cue.oscBase+"/play" && PlaybackControl.Play(message)) { cue.TryPlay(); LastError = cue.LastError; }
                 else if (message.Address == cue.oscBase+"/stop") cue.Stop();
                 else if (message.Address == cue.oscBase+"/loop") cue.SetLoop(PlaybackControl.Loop(message));
+            }
+            foreach (var live in SceneInventory.InWorld<LiveInputCue>(this))
+            {
+                if (!live.isActiveAndEnabled || !live.ValidBase) continue;
+                if (message.Address == live.oscBase+"/play" && PlaybackControl.Play(message)) { live.TryStart(); LastError = live.LastError; }
+                else if (message.Address == live.oscBase+"/stop") live.Stop();
+                else if (message.Address == live.oscBase+"/gain" && PlaybackControl.Gain(message,out float gain)) live.SetGain(gain);
             }
         }
     }

@@ -19,6 +19,8 @@ def main():
         if mode=='EditMode' and args.require_native:
             native=[case for case in ET.parse(xml).getroot().iter('test-case') if case.get('classname','').endswith('.NativePlaybackTests')]
             if len(native)<5 or any(case.get('result')!='Passed' for case in native):raise RuntimeError('Native integration tests were missing/skipped/failed; build and install the plugin first')
+            live=[case for case in ET.parse(xml).getroot().iter('test-case') if case.get('classname','').endswith('.LiveInputTests')]
+            if len(live)<4 or any(case.get('result')!='Passed' for case in live):raise RuntimeError('Live input tests were missing/skipped/failed; rebuild and install the plugin')
         checks.append({'platform':mode,'total':int(result['total']),'passed':int(result['passed']),'xml':str(xml)})
         print(mode,result['passed'],'passed',flush=True)
     report={'status':'passed','project':str(args.project.resolve()),'unity':str(args.unity.resolve()),'checks':checks,'scope':'Spatial/query plus silent native PCM/ABI/invalid-device and explicit non-playing device-inventory checks. No physical sound/fidelity/latency certification.'}

@@ -35,6 +35,25 @@ The controller profile is `ExampleProject/OSCControllerProfile.json`. Inputs 820
 state monitor 9101, ADM 50019, Custom 9102 avoid Unreal defaults on the same computer.
 The original small SpatialExample scene remains a regression fixture, not the main demo.
 
+## Live input (microphone / line in)
+
+`LiveInputCue` routes a **selected capture device and channel** to a **selected output device and
+channel** through the same native direct-device path as `PlaybackCue` (no Unity `Microphone`,
+`AudioSource` or mixer). Selection mirrors output: explicit **refresh** of input/output devices, exact
+configured IDs with **no default fallback**, input channel `0` = all / `1..N` = one input, output
+channel `0` = corresponding / `1..N` = one output. Nothing opens a microphone until an explicit
+**Start live** (OSC `/{base}/play`, inspector button). `/{base}/stop`, `/{base}/gain` (float 0..4),
+observed `/{base}/state` and a read-only `live_input` discovery record are provided.
+
+**Live means the native worker really started, not that Start was requested.** Latency is a bounded
+ring (about twice the requested buffer) with a drift servo; underruns/overruns are counted and the input
+peak is reported. The OS may prompt for microphone permission (Windows privacy setting for desktop apps;
+macOS `NSMicrophoneUsageDescription`). **Monitoring a mic through nearby speakers causes feedback:** use
+headphones or low gain. Exclusive mode applies to the output only.
+
+Tested silently only: offline bridge tests plus invalid devices. **No real microphone has been opened
+by any test and physical latency/quality is unverified. macOS capture is unbuilt source.**
+
 ## Install the package
 
 Local source: Package Manager → Install package from disk →

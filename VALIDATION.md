@@ -3,6 +3,16 @@
 Host: Windows 11, Unity **6000.6.9f1**, MSVC 2022 x64 / Windows SDK 10.0.26100.
 Implementation/deployment checks below do not certify physical sound or untested platforms.
 
+## Live input addendum (local, silent)
+
+Native: 48 silent checks (bridge mapping/resample/underrun/overrun/gain/NaN, codec round-trip,
+input inventory, live start on invalid devices, 50-iteration start/stop stress), MSVC 0 warnings.
+Unity: **54 EditMode + 5 PlayMode, no skips**, including 4 `LiveInputTests`: input inventory,
+invalid devices fail with no false live/state, bounded gain/OSC gain, read-only discovery.
+**Not measured:** any real microphone/line capture, physical latency, drift behavior over time,
+channel isolation, feedback handling, macOS Core Audio capture (source written, never compiled),
+packaged clean-consumer re-run with live input. GitHub Actions remain disabled.
+
 ## Current local URP migration / Actions policy
 
 **GitHub Actions is disabled by request on all four repositories. No further hosted

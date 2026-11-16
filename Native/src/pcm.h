@@ -38,4 +38,18 @@ inline void encode(const float* source,int samples,uint8_t* output,bool floating
         for (int b=0;b<bits/8;++b) *output++=uint8_t(word>>(8*b));
     }
 }
+// Inverse of encode(): little-endian device words to clamped floats. Throws on unsupported layouts.
+inline void decode(const uint8_t* input,int samples,float* output,bool floating,int bits,int valid) {
+    if (!input || !output || samples<0 || (floating?bits!=32:(bits!=16 && bits!=24 && bits!=32)) || valid<1 || valid>bits) throw std::runtime_error("Unsupported device PCM format");
+    for (int i=0;i<samples;++i) {
+        uint32_t word=0; for (int b=0;b<bits/8;++b) word|=uint32_t(*input++)<<(8*b);
+        float v;
+        if (floating) { std::memcpy(&v,&word,4); }
+        else {
+            int64_t q=bits==32?int64_t(int32_t(word)):(bits==24?int64_t(int32_t(word<<8)>>8):int64_t(int16_t(word)));
+            q>>= (bits-valid); int64_t scale=int64_t(1)<<(valid-1); v=float(double(q)/double(scale));
+        }
+        output[i]=std::isfinite(v)?std::clamp(v,-1.f,1.f):0;
+    }
+}
 }

@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- Live input: `LiveInputCue`, native C ABI additions (`sf_live_*`, `sf_input_devices_json`), OSC play/stop/gain/state, discovery record and inspector. Silent tests only; macOS capture unbuilt.
+
 ## 0.5.0 — functional completion / deployment gates
 
 - Independent protocol destinations, per-target IDs/fields/enables, explicit bound poses

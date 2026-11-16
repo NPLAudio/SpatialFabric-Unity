@@ -7,7 +7,7 @@ using UnityEngine.SceneManagement;
 
 namespace NPLAudio.SpatialFabric
 {
-    [Serializable] public sealed class SceneControls { public string play, stop, loop; }
+    [Serializable] public sealed class SceneControls { public string play, stop, loop, gain; }
     [Serializable] public sealed class SceneTransform
     {
         public float[] position_cm, scale, unity_rotation_euler_deg;
@@ -55,6 +55,10 @@ namespace NPLAudio.SpatialFabric
         public bool registered, playing, loop, auto_replay, backend_available, pcm_prepared, replay_pending, exclusive_requested, exclusive_active;
         public int buffer_ms_requested, actual_output_channels, actual_output_rate, actual_buffer_frames;
         public string worker_state, end_reason;
+        public string input_device_id;
+        public int input_channel, actual_input_channels, actual_input_rate;
+        public float input_peak, latency_ms;
+        public ulong underruns, overruns;
     }
     [Serializable] public sealed class ScenePlaybackNetwork
     {
@@ -201,6 +205,18 @@ namespace NPLAudio.SpatialFabric
                 row.exclusive_requested = cue.exclusiveRequested; row.buffer_ms_requested = cue.bufferMsRequested;
                 row.exclusive_active = cue.ExclusiveActive; row.actual_output_channels = cue.ActualOutputChannels;
                 row.actual_output_rate = cue.ActualOutputRate; row.actual_buffer_frames = cue.ActualBufferFrames; rows.Add(row);
+            }
+            foreach (var live in InWorld<LiveInputCue>(owner))
+            {
+                var row = Row("live_input",live); row.osc_base = live.oscBase;
+                row.controls = new SceneControls {play = live.oscBase+"/play",stop = live.oscBase+"/stop",gain = live.oscBase+"/gain"};
+                row.state_address = live.oscBase+"/state"; row.input_device_id = live.inputDeviceId; row.configured_device_id = live.outputDeviceId;
+                row.input_channel = live.inputChannel; row.output_channel = live.outputChannel; row.gain = live.gain;
+                // Cached observed state only: discovery never enumerates devices or opens a microphone.
+                row.playing = live.IsLive; row.last_error = live.LastError; row.registered = live.isActiveAndEnabled; row.backend_available = live.BackendAvailable;
+                row.worker_state = live.WorkerState.ToString(); row.end_reason = live.EndReason.ToString(); row.exclusive_requested = live.exclusiveOutputRequested; row.buffer_ms_requested = live.bufferMsRequested;
+                row.actual_input_channels = live.ActualInputChannels; row.actual_input_rate = live.ActualInputRate; row.actual_output_channels = live.ActualOutputChannels; row.actual_output_rate = live.ActualOutputRate;
+                row.input_peak = live.InputPeak; row.latency_ms = live.LatencyMilliseconds; row.underruns = live.Underruns; row.overruns = live.Overruns; rows.Add(row);
             }
             rows.Sort((a,b) => string.CompareOrdinal(a.key,b.key));
             if (rows.Count > 16384) return Failure("inventory_limit");
