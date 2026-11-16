@@ -22,8 +22,8 @@ namespace NPLAudio.SpatialFabric.Example.Editor
         static Material Material(string name,Color color)
         {
             string path=Generated+"/"+name+".mat";var material=AssetDatabase.LoadAssetAtPath<Material>(path);
-            if(material==null){material=new Material(Shader.Find("Standard"));AssetDatabase.CreateAsset(material,path);}
-            material.color=color;material.SetFloat("_Glossiness",.05f);EditorUtility.SetDirty(material);return material;
+            if(material==null){material=new Material(Shader.Find("Universal Render Pipeline/Lit"));AssetDatabase.CreateAsset(material,path);}
+            material.color=color;material.SetFloat("_Smoothness",.05f);EditorUtility.SetDirty(material);return material;
         }
         static GameObject Box(string name,Vector3 position,Vector3 size,Material material,bool collision)
         {
@@ -46,7 +46,7 @@ namespace NPLAudio.SpatialFabric.Example.Editor
         }
         static void Light(string name,Vector3 position,float intensity,float range)
         {
-            var l=new GameObject(name).AddComponent<UnityEngine.Light>();l.transform.SetParent(root);l.transform.position=position;l.type=LightType.Point;l.intensity=intensity;l.range=range;l.shadows=LightShadows.None;
+            var l=new GameObject(name).AddComponent<UnityEngine.Light>();l.transform.SetParent(root);l.transform.position=position;l.type=LightType.Point;l.intensity=intensity*(name.StartsWith("Spatial fill ")?12f:4f);l.range=range;l.shadows=LightShadows.None;
         }
         static PreparedAudioAsset Audio(string file)
         {

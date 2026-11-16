@@ -162,7 +162,7 @@ Light:
   serializedVersion: 13
   m_Type: 2
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_Intensity: 2.5
+  m_Intensity: 10
   m_Range: 14
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208
@@ -362,6 +362,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: SpatialFabric.Runtime::NPLAudio.SpatialFabric.SpatialObject
   persistentId: 1d0a1b9d803849e9aceb1937d5d78cb1
   objectId: 2
+  admObjectIdOverride: -1
+  boundTransform: {fileID: 0}
+  displayLabel: 
+  targetOverrides: []
   customObjectIdOverride: -1
   gain: 1
   width: 0
@@ -621,7 +625,7 @@ Light:
   serializedVersion: 13
   m_Type: 2
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_Intensity: 2
+  m_Intensity: 8
   m_Range: 12
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208
@@ -2281,6 +2285,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: SpatialFabric.Runtime::NPLAudio.SpatialFabric.SpatialObject
   persistentId: d81ca1eecf3c4583808c8d6d114c0f3f
   objectId: 4
+  admObjectIdOverride: -1
+  boundTransform: {fileID: 0}
+  displayLabel: 
+  targetOverrides: []
   customObjectIdOverride: -1
   gain: 1
   width: 0
@@ -3175,7 +3183,7 @@ Light:
   serializedVersion: 13
   m_Type: 2
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_Intensity: 2
+  m_Intensity: 8
   m_Range: 12
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208
@@ -3529,7 +3537,7 @@ Light:
   serializedVersion: 13
   m_Type: 2
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_Intensity: 3
+  m_Intensity: 36
   m_Range: 24
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208
@@ -4079,7 +4087,7 @@ Light:
   serializedVersion: 13
   m_Type: 2
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_Intensity: 3
+  m_Intensity: 36
   m_Range: 24
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208
@@ -4168,7 +4176,9 @@ MonoBehaviour:
   flipRight: 0
   flipUp: 0
   followPositionAndOrientation: 0
+  followMode: 0
   listener: {fileID: 0}
+  allowLoadedAdditiveListener: 0
 --- !u!4 &1276573847
 Transform:
   m_ObjectHideFlags: 0
@@ -4950,7 +4960,7 @@ Light:
   serializedVersion: 13
   m_Type: 2
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_Intensity: 2
+  m_Intensity: 8
   m_Range: 12
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208
@@ -5903,6 +5913,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: SpatialFabric.Runtime::NPLAudio.SpatialFabric.SpatialObject
   persistentId: 5542fe72302d410e8125bcb6e4cbf73f
   objectId: 3
+  admObjectIdOverride: -1
+  boundTransform: {fileID: 0}
+  displayLabel: 
+  targetOverrides: []
   customObjectIdOverride: -1
   gain: 1
   width: 0
@@ -6532,6 +6546,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: SpatialFabric.Runtime::NPLAudio.SpatialFabric.SpatialFabricManager
   persistentId: 88f3c0bc20994686a75d53e924c049cb
   stage: {fileID: 1276573846}
+  additionalScenePaths: []
   objects:
   - {fileID: 1952597554}
   - {fileID: 35337158}
@@ -6566,6 +6581,7 @@ MonoBehaviour:
   admCoordinateMode: 2
   admSendOnlyOnChange: 0
   admSendRateHz: 0
+  outputs: []
   enableSceneQueries: 1
   allowRemoteSceneQueries: 0
 --- !u!4 &1927574304
@@ -6617,6 +6633,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: SpatialFabric.Runtime::NPLAudio.SpatialFabric.SpatialObject
   persistentId: bcf7acca25bd4d85a4dc37c706dda721
   objectId: 1
+  admObjectIdOverride: -1
+  boundTransform: {fileID: 0}
+  displayLabel: 
+  targetOverrides: []
   customObjectIdOverride: -1
   gain: 1
   width: 0
@@ -6988,7 +7008,7 @@ Light:
   serializedVersion: 13
   m_Type: 2
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_Intensity: 2.5
+  m_Intensity: 10
   m_Range: 14
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208
@@ -7202,7 +7222,7 @@ Light:
   serializedVersion: 13
   m_Type: 2
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_Intensity: 2.5
+  m_Intensity: 10
   m_Range: 14
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208

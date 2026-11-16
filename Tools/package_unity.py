@@ -20,14 +20,14 @@ def sample():
     for name in names:
         for suffix in ('','.meta'):
             p=source/(name+suffix);result['Samples~/FourRoomShowcase/'+name+suffix]=p.read_bytes()
-    for directory in ['GeneratedRooms','Scenes']:
+    for directory in ['GeneratedRooms','Scenes','Rendering']:
         meta=source/(directory+'.meta')
         result['Samples~/FourRoomShowcase/'+directory+'.meta']=meta.read_bytes()
         for rel,data in files(source/directory):
             if directory=='Scenes' and not rel.startswith('RoomShowcase.unity'):continue
             if rel.startswith('.'):continue
             result['Samples~/FourRoomShowcase/'+directory+'/'+rel]=data
-    result['Samples~/FourRoomShowcase/README.md']=b'# Four-room showcase\nOpen Scenes/RoomShowcase.unity and press Play. WASD/mouse, Esc cursor, E play room cue, Q stop, X stop all. No automatic audio or networking. Windows native output is included only in a Windows-built package; macOS requires a matching local native build.\n'
+    result['Samples~/FourRoomShowcase/README.md']=b'# Four-room showcase (URP)\nRequires Universal Render Pipeline (the Unity 6.6 example uses URP 17.6.0). Install URP before importing. In a new project explicitly assign Rendering/ShowcaseURP.asset in Project Settings > Graphics and each Quality level. In an existing URP project retain your own pipeline; importing this sample never changes project settings automatically. Built-in/HDRP are not supported by these sample materials. The core SpatialFabric package remains render-pipeline independent.\nOpen Scenes/RoomShowcase.unity and press Play. WASD/mouse, Esc cursor, E play room cue, Q stop, X stop all. No automatic audio or networking. Windows native output is included only in a Windows-built package; macOS requires a matching local native build.\n'
     result['Samples~/FourRoomShowcase/ASSET_LICENSES.md']=(ROOT/'ExampleProject/ASSET_LICENSES.md').read_bytes()
     return result
 def main():

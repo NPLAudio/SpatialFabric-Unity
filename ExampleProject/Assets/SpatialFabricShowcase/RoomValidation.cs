@@ -17,6 +17,11 @@ namespace NPLAudio.SpatialFabric.Example
         {
             var r=new RoomValidationReport();Physics.SyncTransforms();
             r.Check(rooms!=null && rooms.plan.rooms.Length==4,"four room definitions");if(rooms==null)return r;
+            var pipeline=UnityEngine.Rendering.GraphicsSettings.defaultRenderPipeline;
+            r.Check(pipeline!=null && pipeline.GetType().Name=="UniversalRenderPipelineAsset","URP default pipeline assigned");
+            r.Check(QualitySettings.renderPipeline==pipeline,"active quality uses showcase URP");
+            var materials=rooms.GetComponentsInChildren<Renderer>(true).SelectMany(m=>m.sharedMaterials).Where(m=>m!=null).ToArray();
+            r.Check(materials.Length>0 && materials.All(m=>m.shader!=null && (m.shader.name=="Universal Render Pipeline/Lit" || m.shader.name=="SpatialFabric/Room Text")),"URP geometry and depth-tested sign materials");
             r.Check(rooms.cues.Length==3 && rooms.cues.All(c=>c.preparedAudio!=null),"three real prepared PCM assets");
             r.Check(rooms.cues.Select(c=>c.preparedAudio.Channels).SequenceEqual(new[]{1,2,1}),"mono stereo replay channels");
             r.Check(rooms.cues.All(c=>c.preparedAudio.SampleRate==48000 && c.preparedAudio.Duration>.1),"48 kHz original cue durations");

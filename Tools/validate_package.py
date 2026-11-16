@@ -9,7 +9,8 @@ def main():
     folder=(args.output or Path(tempfile.mkdtemp(prefix='SpatialFabricUPMConsumer-'))).resolve();project=folder/'Project';project.mkdir(parents=True,exist_ok=True)
     if any(project.iterdir()):raise SystemExit('Consumer project must be empty; never overwrite a user project')
     (project/'Packages').mkdir();(project/'ProjectSettings').mkdir();(project/'Assets').mkdir()
-    deps={'com.nplaudio.spatialfabric':'file:'+args.package.resolve().as_posix(),'com.unity.modules.imageconversion':'1.0.0'}
+    urp=json.loads((ROOT/'ExampleProject/Packages/manifest.json').read_text())['dependencies']['com.unity.render-pipelines.universal']
+    deps={'com.nplaudio.spatialfabric':'file:'+args.package.resolve().as_posix(),'com.unity.modules.imageconversion':'1.0.0','com.unity.render-pipelines.universal':urp}
     (project/'Packages/manifest.json').write_text(json.dumps({'dependencies':deps},indent=2))
     (project/'ProjectSettings/ProjectVersion.txt').write_bytes((ROOT/'ExampleProject/ProjectSettings/ProjectVersion.txt').read_bytes())
     with tarfile.open(args.package) as tar:
@@ -25,6 +26,8 @@ def main():
     editor.write_text('''using System;using System.IO;using UnityEditor;using UnityEditor.SceneManagement;using UnityEditor.Build.Reporting;using UnityEngine;using NPLAudio.SpatialFabric;using NPLAudio.SpatialFabric.Example;using NPLAudio.SpatialFabric.Audio;
 public static class ValidateConsumer {public static void Run(){
  string[] a=Environment.GetCommandLineArgs();string folder=a[Array.IndexOf(a,"-spatialFabricEvidence")+1];
+ var pipeline=AssetDatabase.LoadAssetAtPath<UnityEngine.Rendering.RenderPipelineAsset>("Assets/FourRoomShowcase/Rendering/ShowcaseURP.asset");if(pipeline==null)throw new Exception("Packaged URP asset missing");
+ UnityEngine.Rendering.GraphicsSettings.defaultRenderPipeline=pipeline;int q=QualitySettings.GetQualityLevel();for(int i=0;i<QualitySettings.names.Length;i++){QualitySettings.SetQualityLevel(i,false);QualitySettings.renderPipeline=pipeline;}QualitySettings.SetQualityLevel(q,false);AssetDatabase.SaveAssets();
  string scene="Assets/FourRoomShowcase/Scenes/RoomShowcase.unity";EditorSceneManager.OpenScene(scene);var rooms=UnityObjects.FindAll<ShowcaseRooms>()[0];var r=RoomValidation.Validate(rooms,true);
  if(r.failed.Count>0)throw new Exception(string.Join(";",r.failed));if(!NativeAudio.IsAvailable)throw new Exception(NativeAudio.AvailabilityError);
  File.WriteAllText(Path.Combine(folder,"consumer-editor.json"),JsonUtility.ToJson(r,true));

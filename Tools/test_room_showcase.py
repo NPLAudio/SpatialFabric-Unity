@@ -19,6 +19,18 @@ class RoomShowcaseTests(unittest.TestCase):
     def test_signs_use_depth_testing_not_overlay(self):
         shader=(EXAMPLE/'Assets/SpatialFabricShowcase/RoomText.shader').read_text();self.assertIn('ZTest LEqual',shader);self.assertNotIn('ZTest Always',shader)
         builder=(EXAMPLE/'Assets/SpatialFabricShowcase/Editor/BuildRoomShowcase.cs').read_text();self.assertIn('label.characterSize=size*.1f',builder)
+    def test_example_and_sample_use_urp(self):
+        folder=EXAMPLE/'Assets/SpatialFabricShowcase'
+        manifest=json.loads((EXAMPLE/'Packages/manifest.json').read_text())
+        self.assertEqual(manifest['dependencies']['com.unity.render-pipelines.universal'],'17.6.0')
+        shader=(folder/'RoomText.shader').read_text();self.assertIn('UniversalPipeline',shader);self.assertIn('Core.hlsl',shader);self.assertNotIn('UnityCG.cginc',shader)
+        pipeline=folder/'Rendering/ShowcaseURP.asset';self.assertTrue(pipeline.is_file())
+        guid=next(line.split(': ',1)[1] for line in pipeline.with_suffix('.asset.meta').read_text().splitlines() if line.startswith('guid:'))
+        for settings in ['GraphicsSettings.asset','QualitySettings.asset']:self.assertIn(guid,(EXAMPLE/'ProjectSettings'/settings).read_text())
+        builder=(folder/'Editor/BuildRoomShowcase.cs').read_text();self.assertNotIn('Shader.Find("Standard")',builder)
+        from package_unity import sample
+        entries=sample();self.assertIn('Samples~/FourRoomShowcase/Rendering/ShowcaseURP.asset',entries)
+        self.assertIn(b'render-pipeline independent',entries['Samples~/FourRoomShowcase/README.md'])
     def test_walking_and_controls_are_real(self):
         visitor=(EXAMPLE/'Assets/SpatialFabricShowcase/ShowcaseVisitor.cs').read_text();self.assertIn('CharacterController',visitor);self.assertIn('Body.Move',visitor);self.assertIn('cue.TryPlay()',visitor)
         hud=(EXAMPLE/'Assets/SpatialFabricShowcase/ShowcaseRoomHud.cs').read_text();self.assertIn('StartNetworking()',hud);self.assertIn('cue.TryPlay()',hud);self.assertIn('StopAll()',hud)

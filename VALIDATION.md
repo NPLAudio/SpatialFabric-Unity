@@ -3,7 +3,27 @@
 Host: Windows 11, Unity **6000.6.9f1**, MSVC 2022 x64 / Windows SDK 10.0.26100.
 Implementation/deployment checks below do not certify physical sound or untested platforms.
 
-## Git publication / hosted CI addendum
+## Current local URP migration / Actions policy
+
+**GitHub Actions is disabled by request on all four repositories. No further hosted
+workflows are used. Historical CI results below are preserved only as historical evidence.**
+
+The Unity 6000.6.9f1 example now uses **URP 17.6.0 / Forward+**, assigned in Graphics
+and all Quality levels, URP Lit materials and the original depth-tested URP HLSL sign shader.
+Owned light intensities were adjusted and real player views reviewed (not just headless
+material checks). The core UPM implementation has no URP dependency; the room sample does.
+Sample import never silently replaces a consumer's render pipeline.
+
+Local post-migration results: **17 tooling tests, 50 EditMode, 5 PlayMode (no skips),
+47 room-editor and 54 actual room-player checks** with five rendered views. A fresh
+UPM consumer installed the packaged rendering assets/URP dependency, strict-built its
+own player and passed **53 headless checks**, then **54 graphics/player checks** with
+five additional sample renders. No physical audio was played.
+Local evidence: `%TEMP%/SpatialFabricURPMigration-380fvgyc/`, including `UnityTests/`,
+`AcceptedRooms/`, `Consumer/` and `Packages/`. Earlier `dist/0.5.0/` archives are the
+historical pre-URP snapshot; fresh candidate archives are in that evidence directory.
+
+## Git publication / historical hosted CI addendum
 
 Repositories are published with reciprocal README links. Hosted run
 [43886108349](https://github.com/NPLAudio/SpatialFabric-Unity/actions/runs/43886108349)
@@ -16,7 +36,7 @@ Interop contract CI also passed; generated fixtures/checksums now use canonical 
 across Git checkouts. Source binaries, editor state and local reports remain excluded.
 
 The Windows-host results below are the earlier local record, not relabeled hosted Unity
-runs. Licensed Unity tests remain a separate manual/self-hosted workflow.
+runs. GitHub Actions is now disabled; Unity tests are invoked locally using the documented tools.
 
 ## Current measured gates
 

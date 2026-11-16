@@ -11,6 +11,22 @@ Press **Play**. You start in an enclosed hallway with four separate demo rooms:
 3. **Stereo groove** — original musical loop, corresponding L/R device channels.
 4. **Replay cue** — original glass/mechanical cue, output 2, replay delay 2.5 seconds.
 
+## Rendering: Universal Render Pipeline
+
+The Unity 6.6 example uses **URP 17.6.0 / Forward+**, explicitly assigned in Graphics
+and every Quality level. Owned materials use URP Lit; the original sign shader uses
+URP HLSL with depth testing. Point-light intensities account for URP attenuation.
+No Built-in pipeline, template scene or template character is required.
+
+For the packaged room sample, install URP before importing and explicitly assign its
+`Rendering/ShowcaseURP.asset` in a **new** project's Graphics/Quality settings. In an
+existing URP project keep your own pipeline. Sample import never changes settings
+automatically. The core SpatialFabric package remains render-pipeline independent.
+
+An explicit owned-assets-only repair command is **Tools → SpatialFabric → Configure
+example URP**. It refuses unrelated pipelines and unsaved scenes; it never rebuilds
+rooms, prepares audio or starts transport. GitHub Actions is disabled; validation is local.
+
 ## Real controls
 
 - **WASD + mouse** walk/look; Shift sprint; Space jump.

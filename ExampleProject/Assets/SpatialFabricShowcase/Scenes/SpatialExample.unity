@@ -167,12 +167,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: SpatialFabric.Runtime::NPLAudio.SpatialFabric.SpatialObject
   persistentId: 687b44124fb5481faa5e3fa920d631d2
   objectId: 3
+  admObjectIdOverride: -1
+  boundTransform: {fileID: 0}
+  displayLabel: 
+  targetOverrides: []
   customObjectIdOverride: -1
   gain: 1
   width: 0
   mute: 0
   sendAdm: 1
   sendCustom: 1
+  customFields: []
 --- !u!23 &225723507
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -198,7 +203,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 2100000, guid: 37a7fd949ecdd754eb25f8d43b4f04f8, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -265,7 +270,9 @@ MonoBehaviour:
   flipRight: 0
   flipUp: 0
   followPositionAndOrientation: 0
+  followMode: 0
   listener: {fileID: 0}
+  allowLoadedAdditiveListener: 0
 --- !u!4 &383929363
 Transform:
   m_ObjectHideFlags: 0
@@ -466,12 +473,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: SpatialFabric.Runtime::NPLAudio.SpatialFabric.SpatialObject
   persistentId: fcb03b9d4568480b80812a9ae56a5461
   objectId: 4
+  admObjectIdOverride: -1
+  boundTransform: {fileID: 0}
+  displayLabel: 
+  targetOverrides: []
   customObjectIdOverride: -1
   gain: 1
   width: 0
   mute: 0
   sendAdm: 1
   sendCustom: 1
+  customFields: []
 --- !u!23 &745020614
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -497,7 +509,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 2100000, guid: 37a7fd949ecdd754eb25f8d43b4f04f8, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -575,6 +587,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: SpatialFabric.Runtime::NPLAudio.SpatialFabric.SpatialFabricManager
   persistentId: b8061adeab2b4a508c0191c782d2641d
   stage: {fileID: 383929362}
+  additionalScenePaths: []
   objects:
   - {fileID: 1433944297}
   - {fileID: 1062639917}
@@ -594,6 +607,22 @@ MonoBehaviour:
   sendAdm: 1
   sendCustom: 1
   customAddressTemplate: /unity/{id}/xyz
+  customProtocol:
+    coordinates: 0
+    sendMode: 0
+    argumentTemplate: x y z
+    positionMin: -1
+    positionMax: 1
+    gainMin: 0
+    gainMax: 1
+    widthMin: 0
+    widthMax: 1
+    sendOnlyOnChange: 0
+    sendRateHz: 0
+  admCoordinateMode: 2
+  admSendOnlyOnChange: 0
+  admSendRateHz: 0
+  outputs: []
   enableSceneQueries: 1
   allowRemoteSceneQueries: 0
 --- !u!1 &1062639915
@@ -644,12 +673,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: SpatialFabric.Runtime::NPLAudio.SpatialFabric.SpatialObject
   persistentId: cc98c576ed23450d8d685a25e99a1633
   objectId: 2
+  admObjectIdOverride: -1
+  boundTransform: {fileID: 0}
+  displayLabel: 
+  targetOverrides: []
   customObjectIdOverride: -1
   gain: 1
   width: 0
   mute: 0
   sendAdm: 1
   sendCustom: 1
+  customFields: []
 --- !u!23 &1062639918
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -675,7 +709,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 2100000, guid: 37a7fd949ecdd754eb25f8d43b4f04f8, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -766,7 +800,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 2100000, guid: 37a7fd949ecdd754eb25f8d43b4f04f8, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -864,10 +898,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: SpatialFabric.Runtime::NPLAudio.SpatialFabric.PlaybackCue
   persistentId: fe43529760cf4ec38ed232a7a65d3279
+  preparedAudio: {fileID: 0}
   clip: {fileID: 0}
   oscBase: /unity/playback/mono
   configuredDeviceId: 
   outputChannel: 0
+  exclusiveRequested: 0
+  bufferMsRequested: 0
   loop: 0
   autoReplay: 0
   replayDelaySeconds: 1
@@ -919,12 +956,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: SpatialFabric.Runtime::NPLAudio.SpatialFabric.SpatialObject
   persistentId: d1b943949f1f48eeab73927fb9607b15
   objectId: 1
+  admObjectIdOverride: -1
+  boundTransform: {fileID: 0}
+  displayLabel: 
+  targetOverrides: []
   customObjectIdOverride: -1
   gain: 1
   width: 0
   mute: 0
   sendAdm: 1
   sendCustom: 1
+  customFields: []
 --- !u!23 &1433944298
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -950,7 +992,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 2100000, guid: 37a7fd949ecdd754eb25f8d43b4f04f8, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0

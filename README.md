@@ -22,6 +22,8 @@ or platform does not certify another.
 
 Open `ExampleProject/` in Unity **6000.6.9f1**, then
 `Assets/SpatialFabricShowcase/Scenes/RoomShowcase.unity`; press **Play**.
+The example uses **URP 17.6.0 / Forward+**, including URP Lit room materials and a
+URP depth-tested sign shader. The core package remains render-pipeline independent.
 
 Four enclosed rooms share a hallway: spatial motion, warm percussion, stereo groove,
 glass replay. **WASD/mouse**, **Esc** cursor, **E** play room cue, **Q** stop, **X** stop all.
@@ -42,7 +44,13 @@ output first for PCM: `python Tools/build_native.py --install` (MSVC 2022 x64 + 
 Local distribution: `python Tools/package_unity.py --include-built-native` creates
 `dist/0.5.0/com.nplaudio.spatialfabric-0.5.0.tgz`, CompleteSource ZIP, manifest and checksums.
 The tarball includes the locally built Windows plugin and an importable four-room sample;
-Package Manager → Install package from tarball, then import **Four-room walking showcase**.
+Package Manager → Install package from tarball. Install URP before importing **Four-room
+walking showcase**; in a new project explicitly assign the sample's `Rendering/ShowcaseURP.asset`
+in Graphics and each Quality level. Keep your existing pipeline in an existing URP project.
+Import never changes project settings automatically. Built-in/HDRP sample materials are not supplied.
+
+**GitHub Actions is disabled by request across all four repositories. Validation is local;
+existing workflow files and historical run links do not indicate active automation.**
 Git source publication is separate from release publication. Generated native binaries,
 archives and local validation logs are not committed; installable artifacts are built explicitly.
 
