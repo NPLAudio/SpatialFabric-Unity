@@ -54,6 +54,13 @@ headphones or low gain. Exclusive mode applies to the output only.
 Tested silently only: offline bridge tests plus invalid devices. **No real microphone has been opened
 by any test and physical latency/quality is unverified. macOS capture is unbuilt source.**
 
+## Release player (Windows x64)
+
+`python Tools/build_player.py --unity <Unity.exe> --output <new empty dir>` builds the four-room showcase as a
+**non-development Mono player**, runs its headless smoke checks, renders five views from the release build, and writes a ZIP,
+`SHA256SUMS.txt` and `BUILD_MANIFEST.json`. It is **unsigned** (expect the Windows warning), Windows only (no macOS, no IL2CPP),
+silent in testing, and **E plays through the default output device**. The editor must be closed.
+
 ## Install the package
 
 Local source: Package Manager → Install package from disk →

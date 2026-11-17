@@ -3,6 +3,12 @@
 Host: Windows 11, Unity **6000.6.9f1**, MSVC 2022 x64 / Windows SDK 10.0.26100.
 Implementation/deployment checks below do not certify physical sound or untested platforms.
 
+## Release player build (local)
+
+Windows x64 Mono non-development build from Unity 6000.6.9f1: **53 headless smoke checks** and **5 rendered views** from the
+release build (URP shaders intact), re-run from a fresh extraction of the ZIP with matching SHA-256s. Unsigned; IL2CPP and macOS
+are not built; no physical audio was played. The packaged version string is 0.5.0 although the tree also contains unreleased live input.
+
 ## Live input addendum (local, silent)
 
 Native: 48 silent checks (bridge mapping/resample/underrun/overrun/gain/NaN, codec round-trip,
