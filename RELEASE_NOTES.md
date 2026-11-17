@@ -11,6 +11,9 @@
   lifecycle tests and invalid-device regression coverage.
 - The example restores its saved four-room scene when an interactive editor starts
   on a clean empty/default scene, never replacing dirty, saved or multi-scene work.
+- Standalone packaging removes Unity debug backups, rejects unsafe file links and
+  dirty snapshots, validates smoke/render results, and bundles hash-verified engine,
+  Companion, runtime-package and Burst notices.
 
 ## Downloads and use
 
@@ -37,7 +40,8 @@ stops editor networking; explicitly restart it in the desired context.
 
 ## Verification / limits
 
-60 EditMode tests, five PlayMode tests, 117 core checks and 18 Python checks passed.
+60 EditMode tests, five PlayMode tests and 117 core checks passed. The final Python
+suite ran 45 tests successfully (two platform-dependent symlink tests skipped).
 The startup helper also compiled against the installed Unity APIs with no warnings.
 Standalone build evidence and checksums accompany the player download. Automated
 checks use synthetic state, offline rendering or invalid devices and do not prove
