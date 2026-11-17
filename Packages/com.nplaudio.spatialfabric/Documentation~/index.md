@@ -57,6 +57,25 @@ rows/sources in one Undo. Assets may load on explicit Apply, but native PCM/devi
 never start. No source file is silently loaded by a query; assets/scenes are not auto-saved.
 Exact schemas/security limits are in source Docs/RoutingCsv.md.
 
+## Path Studio scene context export
+
+Tools → SpatialFabric → Export Path Studio Context... writes a read-only reference file
+([Context v1](https://github.com/NPLAudio/SpatialFabric/blob/main/Specs/Context-v1.md)) that
+Path Studio draws behind paths. Needs a SpatialStage in the active scene (the first one found is
+used; the summary dialog names it when there are several).
+
+- Scope: the selected GameObjects (children only when they carry an enabled Renderer/Collider);
+  with no selection, every active object in the active scene with an enabled Renderer or Collider
+  (UI/Canvas, hidden and EditorOnly objects skipped).
+- Output: each such object as a `box`, the stage's assigned listener as a `listener` with yaw
+  (0 faces +front, positive turns toward the left), and each SpatialObject as a `point` at its Pose.
+  Ids are the sanitized hierarchy path (`[A-Za-z0-9_./:-]`, unique, 128 max).
+- Boxes are conservative axis-aligned bounds in stage space: rotated objects export the AABB of
+  their eight corners, so they may be larger than the object. Positions are stage-normalized and
+  not clamped to ±1 (clamped to the spec's ±64 only).
+- The authored stage frame is used; listener follow mode is ignored. The scene is never modified.
+  Nothing is sent, played or networked; the file is written atomically to the path you choose.
+
 ## Discovery v1
 
 `/spatialfabric/scene/query ,siii id reply_port offset limit` (short `,si` accepted).

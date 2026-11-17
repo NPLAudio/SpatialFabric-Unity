@@ -146,4 +146,97 @@ using(var ackFixture=JsonDocument.Parse(File.ReadAllText(Path.Combine(Path.GetDi
 }
 Check("ack command sanitization and bound",()=>Assert(PlaybackControl.SanitizeCommand("x/\n"+new string('a',50))=="x__"+new string('a',29)));
 Check("status payload rejected",()=>Assert(PlaybackControl.Decide("status",new OscMessage("/cue/status",OscArg.Int(1)),false)=="rejected"));
+// ---- Path Studio context exporter core (Editor/ContextExportCore.cs) ----
+bool Near(double a,double b)=>Math.Abs(a-b)<1e-9;
+var ctxFrame=new NPLAudio.SpatialFabric.Editor.ContextStageFrame(20,15,8);
+Check("context ToCanonical hand values",()=>{var c=NPLAudio.SpatialFabric.Editor.ContextExportCore.ToCanonical(ctxFrame,1.5,2,5);Assert(Near(c.front,.5)&&Near(c.right,.2)&&Near(c.up,.5));});
+Check("context ToCanonical flips negate axes",()=>
+{
+    var c=NPLAudio.SpatialFabric.Editor.ContextExportCore.ToCanonical(new NPLAudio.SpatialFabric.Editor.ContextStageFrame(20,15,8,true,false,false),1.5,2,5);Assert(Near(c.front,-.5)&&Near(c.right,.2)&&Near(c.up,.5));
+    c=NPLAudio.SpatialFabric.Editor.ContextExportCore.ToCanonical(new NPLAudio.SpatialFabric.Editor.ContextStageFrame(20,15,8,false,true,false),1.5,2,5);Assert(Near(c.front,.5)&&Near(c.right,-.2)&&Near(c.up,.5));
+    c=NPLAudio.SpatialFabric.Editor.ContextExportCore.ToCanonical(new NPLAudio.SpatialFabric.Editor.ContextStageFrame(20,15,8,false,false,true),1.5,2,5);Assert(Near(c.front,.5)&&Near(c.right,.2)&&Near(c.up,-.5));
+});
+Check("context ToCanonical min half extent .05",()=>{var c=NPLAudio.SpatialFabric.Editor.ContextExportCore.ToCanonical(new NPLAudio.SpatialFabric.Editor.ContextStageFrame(0,.02,0),.1,.5,1);Assert(Near(c.front,20)&&Near(c.right,2)&&Near(c.up,10));});
+Check("context ToCanonical is unclamped",()=>{var c=NPLAudio.SpatialFabric.Editor.ContextExportCore.ToCanonical(ctxFrame,0,0,40);Assert(Near(c.front,4.0));});
+Check("context rotated box conservative AABB",()=>
+{
+    // Unity-local box half (1,1,1) turned 45 degrees about up: corners in x/z at (+-sqrt2,0),(0,+-sqrt2); stage 20x20x20 => half extent 10.
+    double r=Math.Sqrt(2);var corners=new List<(double,double,double)>();
+    foreach(var xz in new[]{(r,0.0),(-r,0.0),(0.0,r),(0.0,-r)}) foreach(double y in new[]{-1.0,1.0}) corners.Add((xz.Item1+3,y,xz.Item2));
+    var box=NPLAudio.SpatialFabric.Editor.ContextExportCore.BoxFromLocalCorners(new NPLAudio.SpatialFabric.Editor.ContextStageFrame(20,20,20),corners);
+    Assert(Near(box.center[0],0)&&Near(box.center[1],.3)&&Near(box.center[2],0));
+    Assert(Near(box.halfExtents[0],r/10)&&Near(box.halfExtents[1],r/10)&&Near(box.halfExtents[2],.1));
+});
+Check("context listener yaw",()=>
+{
+    double Yaw(double x,double y,double z,bool flipRight=false,bool flipFront=false)=>NPLAudio.SpatialFabric.Editor.ContextExportCore.ListenerYawDegrees(new NPLAudio.SpatialFabric.Editor.ContextStageFrame(20,15,8,flipFront,flipRight,false),x,y,z);
+    Assert(Near(Yaw(0,0,1),0)&&Near(Yaw(-1,0,0),90)&&Near(Yaw(1,0,0),-90)&&Near(Yaw(0,0,-1),180));
+    Assert(Near(Yaw(-1,0,0,true),-90)&&Near(Yaw(0,0,1,false,true),180)&&Near(Yaw(-1,.7,1),45));
+    Assert(Near(Yaw(0,1,0),0));
+});
+NPLAudio.SpatialFabric.Editor.ContextEntry CtxEntry(string id,NPLAudio.SpatialFabric.Editor.ContextKind kind,double x=0,double y=0,double z=0,string label="")=>new(){Id=id,Kind=kind,Label=label,Position=new[]{x,y,z},HalfExtents=new[]{1.0,1.0,1.0}};
+Check("context sanitize and unique ids",()=>
+{
+    var r=NPLAudio.SpatialFabric.Editor.ContextExportCore.Build("n",new[]{CtxEntry("a b#c",NPLAudio.SpatialFabric.Editor.ContextKind.Point),CtxEntry("a_b_c",NPLAudio.SpatialFabric.Editor.ContextKind.Point),CtxEntry("a_b_c",NPLAudio.SpatialFabric.Editor.ContextKind.Point),CtxEntry("Ok/x.y:z-1",NPLAudio.SpatialFabric.Editor.ContextKind.Point),CtxEntry("",NPLAudio.SpatialFabric.Editor.ContextKind.Point)});
+    var ids=JsonDocument.Parse(r.Json).RootElement.GetProperty("objects").EnumerateArray().Select(o=>o.GetProperty("id").GetString()).ToArray();
+    Assert(string.Join(",",ids)=="a_b_c,a_b_c-2,a_b_c-3,Ok/x.y:z-1,object"&&r.Report.Exported==5);
+});
+Check("context id/label truncation",()=>
+{
+    string longId=new string('a',200);
+    var r=NPLAudio.SpatialFabric.Editor.ContextExportCore.Build(new string('n',300),new[]{CtxEntry(longId,NPLAudio.SpatialFabric.Editor.ContextKind.Point,label:new string('L',300)),CtxEntry(longId,NPLAudio.SpatialFabric.Editor.ContextKind.Point)});
+    var root=JsonDocument.Parse(r.Json).RootElement;var o=root.GetProperty("objects");
+    Assert(o[0].GetProperty("id").GetString()==new string('a',128)&&o[1].GetProperty("id").GetString()==new string('a',126)+"-2");
+    Assert(o[0].GetProperty("label").GetString().Length==256&&root.GetProperty("name").GetString().Length==256&&r.Report.TruncatedText==2);
+});
+Check("context non-finite skipped, clamping counted",()=>
+{
+    var K=NPLAudio.SpatialFabric.Editor.ContextKind.Box;
+    var nan=CtxEntry("nan",K,double.NaN);var inf=CtxEntry("inf",K,0,double.PositiveInfinity);var ext=CtxEntry("ext",K);ext.HalfExtents[1]=double.NaN;
+    var big=CtxEntry("big",K,100,-100,5);big.HalfExtents[0]=99;big.HalfExtents[1]=-3;
+    var sph=CtxEntry("s",NPLAudio.SpatialFabric.Editor.ContextKind.Sphere);sph.Radius=70;
+    var ok=CtxEntry("ok",K,64,-64,0);
+    var r=NPLAudio.SpatialFabric.Editor.ContextExportCore.Build("n",new[]{nan,inf,ext,big,sph,ok});
+    Assert(r.Report.SkippedNonFinite==3&&r.Report.Exported==3&&r.Report.Clamped==2&&r.Report.TruncatedByCap==0);
+    var o=JsonDocument.Parse(r.Json).RootElement.GetProperty("objects");
+    Assert(o[0].GetProperty("position")[0].GetDouble()==64&&o[0].GetProperty("position")[1].GetDouble()==-64&&o[0].GetProperty("half_extents")[0].GetDouble()==64&&o[0].GetProperty("half_extents")[1].GetDouble()==0&&o[1].GetProperty("radius").GetDouble()==64);
+});
+Check("context 4096 cap",()=>
+{
+    var list=Enumerable.Range(0,4100).Select(i=>CtxEntry("p"+i,NPLAudio.SpatialFabric.Editor.ContextKind.Point)).ToList();
+    var r=NPLAudio.SpatialFabric.Editor.ContextExportCore.Build("n",list);
+    Assert(r.Report.Exported==4096&&r.Report.TruncatedByCap==4&&JsonDocument.Parse(r.Json).RootElement.GetProperty("objects").GetArrayLength()==4096);
+});
+Check("context JSON string escaping",()=>
+{
+    string s="q\"b\\n\n\r\t\b\f\u0001\u001f é日🎧";
+    var r=NPLAudio.SpatialFabric.Editor.ContextExportCore.Build("n",new[]{CtxEntry("x",NPLAudio.SpatialFabric.Editor.ContextKind.Point,label:s)});
+    Assert(r.Json.Contains("\\\"b\\\\n\\n\\r\\t\\b\\f\\u0001\\u001f é日🎧"));
+    Assert(JsonDocument.Parse(r.Json).RootElement.GetProperty("objects")[0].GetProperty("label").GetString()==s);
+    Assert(NPLAudio.SpatialFabric.Editor.ContextExportCore.Quote("\ud800x")=="\"\ufffdx\"");
+});
+List<NPLAudio.SpatialFabric.Editor.ContextEntry> CtxSample()
+{
+    var K=NPLAudio.SpatialFabric.Editor.ContextKind.Box;
+    var box=CtxEntry("wall a",K,1.15,0,0.5,"Wall \"A\"");box.HalfExtents=new[]{0.05,1.2,0.6};
+    var sph=CtxEntry("fountain",NPLAudio.SpatialFabric.Editor.ContextKind.Sphere);sph.Radius=.25;
+    var pt=CtxEntry("sp-fl",NPLAudio.SpatialFabric.Editor.ContextKind.Point,1,-1,0.8);
+    var ls=CtxEntry("listener",NPLAudio.SpatialFabric.Editor.ContextKind.Listener,-0.6,0,0.15);ls.YawDegrees=-0.0;
+    return new(){box,sph,pt,ls};
+}
+Check("context exact 4-object document",()=>
+{
+    string expected=string.Join("\n",new[]{
+        "{","  \"schema\": \"org.nplaudio.spatialfabric.context\",","  \"schema_version\": 1,","  \"space\": \"canonical\",","  \"name\": \"Test\",","  \"objects\": [",
+        "    {","      \"id\": \"wall_a\",","      \"kind\": \"box\",","      \"label\": \"Wall \\\"A\\\"\",","      \"position\": [1.15, 0, 0.5],","      \"half_extents\": [0.05, 1.2, 0.6]","    },",
+        "    {","      \"id\": \"fountain\",","      \"kind\": \"sphere\",","      \"position\": [0, 0, 0],","      \"radius\": 0.25","    },",
+        "    {","      \"id\": \"sp-fl\",","      \"kind\": \"point\",","      \"position\": [1, -1, 0.8]","    },",
+        "    {","      \"id\": \"listener\",","      \"kind\": \"listener\",","      \"position\": [-0.6, 0, 0.15],","      \"yaw_degrees\": 0","    }","  ]","}",""});
+    var r=NPLAudio.SpatialFabric.Editor.ContextExportCore.Build("Test",CtxSample());
+    Assert(r.Json==expected&&!r.Json.Contains('\r')&&r.Report.Exported==4&&r.Report.Clamped==0);
+    using var doc=JsonDocument.Parse(r.Json);Assert(doc.RootElement.GetProperty("objects").GetArrayLength()==4);
+    string outPath=Environment.GetEnvironmentVariable("SF_CONTEXT_SAMPLE_OUT");
+    if(!string.IsNullOrEmpty(outPath)) File.WriteAllText(outPath,r.Json,new System.Text.UTF8Encoding(false));
+});
+Check("context empty document is valid JSON",()=>Assert(JsonDocument.Parse(NPLAudio.SpatialFabric.Editor.ContextExportCore.Build("",new NPLAudio.SpatialFabric.Editor.ContextEntry[0]).Json).RootElement.GetProperty("objects").GetArrayLength()==0));
 Console.WriteLine($"{passed} core checks passed");

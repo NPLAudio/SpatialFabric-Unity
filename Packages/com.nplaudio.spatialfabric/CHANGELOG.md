@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Editor: Tools → SpatialFabric → Export Path Studio Context... writes a Context v1 scene file
+  (stage-normalized, unclamped boxes/listener/points; conservative AABBs; follow-listener ignored)
+  for Path Studio. Pure-C# core (`ContextExportCore`) covered by `Tools/CoreChecks`. Nothing is
+  sent or played.
+
 ## 0.6.0 — acknowledgement/status feedback and example startup
 
 - Standard OSC `/ack` received/ignored/rejected/failed results and `/status` snapshots
