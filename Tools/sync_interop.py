@@ -7,7 +7,7 @@ def main():
     if not hub.exists():hub=ROOT.parent/'SpatialFabric-Interop' # Existing local checkout name before the GitHub rename.
     p=argparse.ArgumentParser();p.add_argument('--interop',type=Path,default=hub);p.add_argument('--check',action='store_true');args=p.parse_args()
     target=ROOT/'Packages/com.nplaudio.spatialfabric/Tests/EditMode/Fixtures'
-    sources=['Fixtures/osc-v1.json','Fixtures/coordinates-v1.json','Fixtures/custom-v1.json','Fixtures/ack-v1.json','Schemas/scene-v1.schema.json']
+    sources=['Fixtures/osc-v1.json','Fixtures/coordinates-v1.json','Fixtures/custom-v1.json','Fixtures/ack-v1.json','Fixtures/path-v1.json','Schemas/scene-v1.schema.json']
     hashes={}
     for name in sources:
         data=(args.interop/name).read_bytes();dest=target/Path(name).name;hashes[name]=hashlib.sha256(data).hexdigest()

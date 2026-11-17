@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Baked path playback: `SpatialPathPlayer` moves a Transform from a Path Studio Path v1 file
+  (`SpatialPathAsset`, Tools → SpatialFabric → Import Path Studio Path...). Pure-C# strict JSON
+  reader, validator, sampler and stage math (`NPLAudio.SpatialFabric.Paths`) match the shared
+  `path-v1.json` golden vectors within 1e-9 (vendored fixture; `Tools/CoreChecks`). Position only,
+  nothing moves until `Play()`/`Seek()`/`Evaluate()`; no audio, OSC or network.
 - Editor: Tools → SpatialFabric → Export Path Studio Context... writes a Context v1 scene file
   (stage-normalized, unclamped boxes/listener/points; conservative AABBs; follow-listener ignored)
   for Path Studio. Pure-C# core (`ContextExportCore`) covered by `Tools/CoreChecks`. Nothing is

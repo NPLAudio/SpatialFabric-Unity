@@ -6,6 +6,7 @@
     "Fixtures/coordinates-v1.json": "cae99565f7854903721de66133222d9fa942fa286b8f87af696aef5a9dd275eb",
     "Fixtures/custom-v1.json": "b243455e04a2b767f2c6b360a846ac56a48eaf926dbb6ac99b23e860ea190aeb",
     "Fixtures/ack-v1.json": "62f0cd362b6d62f6ddfec2100fe30ba4e80cc8b29f90fef279c7664f81fc5138",
+    "Fixtures/path-v1.json": "3882e89e7dccf57a78d59495a39edefb3d34a679f854d11ab065f2dbe7bc8224",
     "Schemas/scene-v1.schema.json": "39e4c23da585991f1f53d63cc94a19397834657253405f7172b093c8523fbeee"
   }
 }

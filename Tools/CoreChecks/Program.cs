@@ -6,6 +6,8 @@ using NPLAudio.SpatialFabric.Osc;
 using NPLAudio.SpatialFabric.Audio;
 using NPLAudio.SpatialFabric.Protocols;
 using NPLAudio.SpatialFabric.Routing;
+using NPLAudio.SpatialFabric.Paths;
+using System.Text;
 
 int passed = 0;
 void Check(string name,Action test) { test(); Console.WriteLine("PASS " + name); ++passed; }
@@ -239,4 +241,186 @@ Check("context exact 4-object document",()=>
     if(!string.IsNullOrEmpty(outPath)) File.WriteAllText(outPath,r.Json,new System.Text.UTF8Encoding(false));
 });
 Check("context empty document is valid JSON",()=>Assert(JsonDocument.Parse(NPLAudio.SpatialFabric.Editor.ContextExportCore.Build("",new NPLAudio.SpatialFabric.Editor.ContextEntry[0]).Json).RootElement.GetProperty("objects").GetArrayLength()==0));
+// ---- Path v1 (baked path playback) ----
+string pathFixturePath=Path.Combine(Path.GetDirectoryName(Path.GetFullPath(args.Length > 0 ? args[0] : "../SpatialFabric-Interop/Fixtures/osc-v1.json"))??".","path-v1.json");
+using var pathFixture=JsonDocument.Parse(File.ReadAllText(pathFixturePath));
+double pathTol=pathFixture.RootElement.GetProperty("tolerance").GetDouble();
+foreach(var c in pathFixture.RootElement.GetProperty("cases").EnumerateArray())
+{
+    string caseName=c.GetProperty("name").GetString();
+    Check("path case "+caseName,()=>
+    {
+        var doc=PathDocument.TryLoad(c.GetProperty("document").GetRawText(),out var problems);
+        Assert(doc!=null&&problems.Count==0);
+        foreach(var s in c.GetProperty("samples").EnumerateArray())
+        {
+            var r=PathSampler.Sample(doc,s.GetProperty("track").GetString(),s.GetProperty("time").GetDouble());
+            var p=s.GetProperty("position");
+            Assert(Math.Abs(r.Front-p[0].GetDouble())<=pathTol&&Math.Abs(r.Right-p[1].GetDouble())<=pathTol&&Math.Abs(r.Up-p[2].GetDouble())<=pathTol);
+            if(s.TryGetProperty("parameters",out var prm))
+            {
+                foreach(var kv in prm.EnumerateObject())
+                {
+                    double? got=kv.Name=="gain"?r.Gain:kv.Name=="spread"?r.Spread:null;
+                    Assert(got.HasValue&&Math.Abs(got.Value-kv.Value.GetDouble())<=pathTol);
+                }
+            }
+            else Assert(!r.Gain.HasValue||doc.FindTrack(s.GetProperty("track").GetString()).Gain!=null);
+        }
+    });
+}
+foreach(var c in pathFixture.RootElement.GetProperty("invalid").EnumerateArray())
+{
+    Check("path invalid "+c.GetProperty("name").GetString(),()=>
+    {
+        var expected=c.GetProperty("codes").EnumerateArray().Select(e=>e.GetString()).OrderBy(e=>e,StringComparer.Ordinal).ToList();
+        var got=PathValidator.Validate(c.GetProperty("document").GetRawText()).Select(e=>e.Code).Distinct().OrderBy(e=>e,StringComparer.Ordinal).ToList();
+        Assert(expected.SequenceEqual(got));
+        Assert(PathDocument.TryLoad(c.GetProperty("document").GetRawText(),out _)==null);
+    });
+}
+string PathMinimal(string track="")=>"{\"schema\":\"org.nplaudio.spatialfabric.path\",\"schema_version\":1,\"space\":\"canonical\",\"tracks\":[{\"id\":\"t\",\"target\":{\"kind\":\"object\",\"key\":\"k\"}"+track+",\"keyframes\":[{\"t\":0,\"position\":[0,0,0]},{\"t\":2,\"position\":[2,4,0]}]}]}";
+List<string> PathCodes(string json)=>PathValidator.Validate(json).Select(e=>e.Code).ToList();
+Check("path minimal document valid",()=>Assert(PathCodes(PathMinimal()).Count==0));
+Check("path schema_version 1.0 accepted but true rejected",()=>{Assert(PathCodes(PathMinimal().Replace("\"schema_version\":1","\"schema_version\":1.0")).Count==0);Assert(PathCodes(PathMinimal().Replace("\"schema_version\":1","\"schema_version\":true")).SequenceEqual(new[]{"bad_version"}));});
+Check("path target label length and object_id rules",()=>
+{
+    string T(string extra)=>PathMinimal().Replace("\"key\":\"k\"","\"key\":\"k\""+extra);
+    Assert(PathCodes(T(",\"label\":\""+new string('a',256)+"\",\"object_id\":7")).Count==0);
+    Assert(PathCodes(T(",\"label\":\""+new string('a',257)+"\"")).SequenceEqual(new[]{"bad_target"}));
+    foreach(string bad in new[]{",\"object_id\":0",",\"object_id\":1.0",",\"object_id\":\"1\"",",\"object_id\":null",",\"label\":3",",\"label\":null"})Assert(PathCodes(T(bad)).SequenceEqual(new[]{"bad_target"}));
+    Assert(PathCodes(T(",\"label\":\""+string.Concat(Enumerable.Repeat("\U0001F3A7",256))+"\"")).Count==0);
+});
+Check("path limits: tracks, keyframes, ids",()=>
+{
+    string track(int i)=>"{\"id\":\"t"+i+"\",\"target\":{\"kind\":\"camera\",\"key\":\"k\"},\"keyframes\":[{\"t\":0,\"position\":[0,0,0]}]}";
+    string docOf(int n)=>"{\"schema\":\"org.nplaudio.spatialfabric.path\",\"schema_version\":1,\"space\":\"canonical\",\"tracks\":["+string.Join(",",Enumerable.Range(0,n).Select(track))+"]}";
+    Assert(PathCodes(docOf(256)).Count==0&&PathCodes(docOf(257)).SequenceEqual(new[]{"too_many_tracks"}));
+    string keys(int n)=>"["+string.Join(",",Enumerable.Range(0,n).Select(i=>"{\"t\":"+i+",\"position\":[0,0,0]}"))+"]";
+    string kdoc(int n)=>"{\"schema\":\"org.nplaudio.spatialfabric.path\",\"schema_version\":1,\"space\":\"canonical\",\"tracks\":[{\"id\":\"t\",\"target\":{\"kind\":\"object\",\"key\":\"k\"},\"keyframes\":"+keys(n)+"}]}";
+    Assert(PathCodes(kdoc(10000)).Count==0&&PathCodes(kdoc(10001)).SequenceEqual(new[]{"too_many_keyframes"}));
+    Assert(PathValidator.IsId(new string('a',64))&&!PathValidator.IsId(new string('a',65))&&!PathValidator.IsId("")&&!PathValidator.IsId("a b")&&!PathValidator.IsId("a\n")&&PathValidator.IsId("A_z-9"));
+});
+Check("path root not an object",()=>{foreach(string j in new[]{"[]","1","\"x\"","null","true"})Assert(PathCodes(j).SequenceEqual(new[]{"bad_schema"}));Assert(PathValidator.Validate((JsonNode)null).Count==1);});
+Check("path sampler extra semantics",()=>
+{
+    var doc=PathDocument.TryLoad(PathMinimal(",\"loop\":\"loop\",\"speed\":2"),out _);
+    var r=PathSampler.Sample(doc,"t",0.5);Assert(Near(r.Front,1)&&Near(r.Right,2));     // tau=1
+    r=PathSampler.Sample(doc,"t",1);Assert(Near(r.Front,0)&&Near(r.Right,0));           // tau=2 == tN -> first key
+    r=PathSampler.Sample(doc,"t",1.25);Assert(Near(r.Front,.5)&&Near(r.Right,1));       // tau=2.5 -> .5
+    r=PathSampler.Sample(doc,"t",-5);Assert(Near(r.Front,0));
+    r=PathSampler.Sample(doc,"t",double.NaN);Assert(Near(r.Front,0));
+    r=PathSampler.Sample(doc,"t",double.PositiveInfinity);Assert(!double.IsNaN(r.Front));
+    var pp=PathDocument.TryLoad(PathMinimal(",\"loop\":\"ping_pong\""),out _);
+    r=PathSampler.Sample(pp,"t",3);Assert(Near(r.Front,1)&&Near(r.Right,2));             // reflect: m=3>2 -> 1
+    bool threw=false;try{PathSampler.Sample(doc,"nope",0);}catch(ArgumentException){threw=true;}Assert(threw);
+    Assert(doc.FindTrack("t").Duration==1);                                              // 2s span / speed 2
+});
+Check("path parameters absent -> null; spread",()=>
+{
+    var doc=PathDocument.TryLoad(PathMinimal(",\"parameters\":{\"spread\":[{\"t\":0,\"value\":0},{\"t\":2,\"value\":1}],\"other\":5}"),out var pr);
+    Assert(doc!=null);var r=PathSampler.Sample(doc,"t",1);Assert(!r.Gain.HasValue&&Near(r.Spread.Value,.5));
+});
+Check("path loaded document resolves waypoints, defaults and ignores unknown fields",()=>
+{
+    string j="{\"schema\":\"org.nplaudio.spatialfabric.path\",\"schema_version\":1,\"space\":\"canonical\",\"extra\":{\"x\":[1]},\"name\":\"n\",\"waypoints\":[{\"id\":\"w\",\"position\":[1,2,3]}],\"tracks\":[{\"id\":\"t\",\"target\":{\"kind\":\"listener\",\"key\":\"k\",\"label\":\"L\",\"object_id\":3},\"keyframes\":[{\"t\":0,\"waypoint\":\"w\",\"future\":1}]}]}";
+    var doc=PathDocument.TryLoad(j,out var pr);Assert(doc!=null&&doc.Name=="n");var t=doc.Tracks[0];
+    Assert(t.TargetKind=="listener"&&t.TargetLabel=="L"&&t.TargetObjectId==3&&t.Loop==PathLoop.None&&t.Speed==1);
+    var s=PathSampler.Sample(doc,"t",9);Assert(s.Front==1&&s.Right==2&&s.Up==3);
+});
+Check("path json parser accepts valid documents and BOM",()=>
+{
+    var n=PathJson.Parse(Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(" {\"a\":[1,-2.5e1,\"\\u00e9\\ud83c\\udfa7\\n\",true,false,null,{}]} ")).ToArray());
+    var a=n.Get("a").Items;Assert(a[0].IsInteger&&a[0].Number==1&&!a[1].IsInteger&&a[1].Number==-25&&a[2].String=="é\U0001F3A7\n"&&a[3].Bool&&a[5].Kind==JsonKind.Null&&a[6].IsObject);
+    Assert(PathJson.Parse("\uFEFF[]").IsArray);
+});
+Check("path json parser rejects malformed text",()=>
+{
+    foreach(string bad in new[]{"","  ","{","[1,]","{\"a\":1,}","{\"a\"}","{a:1}","[01]","[1.]","[.5]","[-]","[1e]","[+1]","tru","nul","'a'","\"\\x\"","\"\\u12\"","\"\\ud800\"","\"\\udc00\"","\"\\ud800\\u0041\"","\"a\nb\"","[1] x","{} {}","[1]]","\"abc","/*c*/[]","[1 2]","NaN","Infinity","[-Infinity]"})
+    {
+        bool rejected=false;try{PathJson.Parse(bad);}catch(FormatException){rejected=true;}Assert(rejected);
+    }
+});
+Check("path json parser rejects non-finite (overflowing) numbers",()=>{foreach(string bad in new[]{"[1e999]","[-1e999]","[1e400]"})Reject(()=>PathJson.Parse(bad));Assert(PathJson.Parse("[1e-999]").Items[0].Number==0);});
+Check("path json parser rejects duplicate keys (also nested)",()=>{Reject(()=>PathJson.Parse("{\"a\":1,\"a\":2}"));Reject(()=>PathJson.Parse("{\"o\":{\"b\":1,\"b\":1}}"));Reject(()=>PathJson.Parse("{\"a\":1,\"\\u0061\":2}"));Assert(PathJson.Parse("{\"a\":{\"a\":1}}").Get("a").Get("a").Number==1);});
+Check("path json parser depth limit 32",()=>
+{
+    string Nest(int d)=>new string('[',d)+new string(']',d);
+    Assert(PathJson.Parse(Nest(32)).IsArray);Reject(()=>PathJson.Parse(Nest(33)));
+    string Obj(int d){var sb=new StringBuilder();for(int i=0;i<d;++i)sb.Append("{\"a\":");sb.Append('1');sb.Append('}',d);return sb.ToString();}
+    Assert(PathJson.Parse(Obj(32)).IsObject);Reject(()=>PathJson.Parse(Obj(33)));
+    Reject(()=>PathJson.Parse(new string('[',200000)));
+});
+Check("path json parser size limit 16 MiB",()=>
+{
+    var ok=new byte[PathJson.MaxBytes];Array.Fill(ok,(byte)' ');ok[0]=(byte)'1';Assert(PathJson.Parse(ok).Number==1);
+    Reject(()=>PathJson.Parse(new byte[PathJson.MaxBytes+1]));
+    Reject(()=>PathJson.Parse(new string(' ',PathJson.MaxBytes+1)));
+    Reject(()=>PathJson.Parse("\"" +new string('\u00e9',PathJson.MaxBytes/2)+"\""));    // 2 bytes per char: over the byte limit
+});
+Check("path json parser rejects invalid UTF-8 and truncation",()=>
+{
+    foreach(var bytes in new[]{new byte[]{0x5b,0x22,0xff,0x22,0x5d},new byte[]{0x5b,0x22,0xc3,0x22,0x5d},new byte[]{0x5b,0x22,0xed,0xa0,0x80,0x22,0x5d},new byte[]{0x5b,0x22,0xc0,0x80,0x22,0x5d}})Reject(()=>PathJson.Parse(bytes));
+    var full=Encoding.UTF8.GetBytes(PathMinimal(",\"loop\":\"loop\""));
+    for(int i=0;i<full.Length;++i){int n=i;Reject(()=>PathJson.Parse(full.Take(n).ToArray()));}
+    var utf=Encoding.UTF8.GetBytes("[\"\u00e9\u3042\U0001F3A7\"]");
+    for(int i=1;i<utf.Length;++i){int n=i;Reject(()=>PathJson.Parse(utf.Take(n).ToArray()));}
+    Reject(()=>PathJson.Parse((byte[])null));Reject(()=>PathJson.Parse((string)null));
+});
+Check("path stage math hand values",()=>
+{
+    var f=new PathStageFrame(20,15,8);
+    var l=PathStageMath.ToLocal(f,.5,.2,.5);Assert(Near(l.x,1.5)&&Near(l.y,2)&&Near(l.z,5));
+    l=PathStageMath.ToLocal(new PathStageFrame(20,15,8,true,false,false),.5,.2,.5);Assert(Near(l.x,1.5)&&Near(l.y,2)&&Near(l.z,-5));
+    l=PathStageMath.ToLocal(new PathStageFrame(20,15,8,false,true,false),.5,.2,.5);Assert(Near(l.x,-1.5)&&Near(l.y,2)&&Near(l.z,5));
+    l=PathStageMath.ToLocal(new PathStageFrame(20,15,8,false,false,true),.5,.2,.5);Assert(Near(l.x,1.5)&&Near(l.y,-2)&&Near(l.z,5));
+    l=PathStageMath.ToLocal(new PathStageFrame(0,.02,0),20,2,10);Assert(Near(l.z,1)&&Near(l.x,.1)&&Near(l.y,.5));   // .05 min half extent
+    l=PathStageMath.ToLocal(f,1,1,1);Assert(Near(l.x,7.5)&&Near(l.y,4)&&Near(l.z,10));                                // canonical [front,right,up] -> x=right,y=up,z=front
+});
+Check("path stage math round-trips ContextExportCore.ToCanonical",()=>
+{
+    var rnd=new Random(7);
+    foreach(var dims in new[]{(20.0,15.0,8.0),(1.0,2.0,3.0),(0.0,.02,.1),(100.0,.5,40.0)})
+    foreach(int mask in Enumerable.Range(0,8))
+    {
+        var pf=new PathStageFrame(dims.Item1,dims.Item2,dims.Item3,(mask&1)!=0,(mask&2)!=0,(mask&4)!=0);
+        var cf=new NPLAudio.SpatialFabric.Editor.ContextStageFrame(dims.Item1,dims.Item2,dims.Item3,(mask&1)!=0,(mask&2)!=0,(mask&4)!=0);
+        for(int k=0;k<5;++k)
+        {
+            double f=rnd.NextDouble()*4-2,r=rnd.NextDouble()*4-2,u=rnd.NextDouble()*4-2;
+            var local=PathStageMath.ToLocal(pf,f,r,u);var back=NPLAudio.SpatialFabric.Editor.ContextExportCore.ToCanonical(cf,local.x,local.y,local.z);
+            Assert(Math.Abs(back.front-f)<1e-9&&Math.Abs(back.right-r)<1e-9&&Math.Abs(back.up-u)<1e-9);
+        }
+    }
+});
+Check("path validate/load never throw on ~200 deterministic mutations",()=>
+{
+    string seed="{\"schema\":\"org.nplaudio.spatialfabric.path\",\"schema_version\":1,\"name\":\"n\",\"space\":\"canonical\",\"waypoints\":[{\"id\":\"w\",\"position\":[0,1,0]}],\"tracks\":[{\"id\":\"t\",\"target\":{\"kind\":\"object\",\"key\":\"k\",\"label\":\"l\",\"object_id\":2},\"loop\":\"ping_pong\",\"speed\":1.5,\"keyframes\":[{\"t\":0,\"position\":[0,0,0],\"interp\":\"bezier\",\"ease\":\"in\",\"tangent_out\":[1,0,0]},{\"t\":1,\"waypoint\":\"w\",\"interp\":\"catmull_rom\",\"tangent_in\":[0,1,0]},{\"t\":2,\"position\":[1,1,1]}],\"parameters\":{\"gain\":[{\"t\":0,\"value\":0},{\"t\":2,\"value\":1}],\"spread\":[{\"t\":0,\"value\":0.5}]}}]}";
+    Assert(PathCodes(seed).Count==0);
+    var rnd=new Random(20240601);
+    JsonNode[] repl={new JsonNode{Kind=JsonKind.Null},new JsonNode{Kind=JsonKind.Bool,Bool=true},new JsonNode{Kind=JsonKind.Number,Number=-1,IsInteger=true},new JsonNode{Kind=JsonKind.Number,Number=1e300},new JsonNode{Kind=JsonKind.Number,Number=double.NaN},new JsonNode{Kind=JsonKind.Number,Number=double.PositiveInfinity},new JsonNode{Kind=JsonKind.String,String=""},new JsonNode{Kind=JsonKind.String,String="w"},new JsonNode{Kind=JsonKind.Array,Items=new List<JsonNode>()},new JsonNode{Kind=JsonKind.Object,Members=new Dictionary<string,JsonNode>()}};
+    void Collect(JsonNode n,List<JsonNode> all){all.Add(n);if(n.IsArray)foreach(var c in n.Items)Collect(c,all);else if(n.IsObject)foreach(var c in n.Members.Values)Collect(c,all);}
+    int valid=0;
+    for(int i=0;i<200;++i)
+    {
+        string text=seed;
+        if(i%2==0)  // text-level: delete / replace / insert a character
+        {
+            int pos=rnd.Next(text.Length);
+            text=rnd.Next(3)==0?text.Remove(pos,1):rnd.Next(2)==0?text.Remove(pos,1).Insert(pos,"{[]}\",:0-e. xtn"[rnd.Next(15)].ToString()):text.Insert(pos,"{[]}\",:0-e. xtn"[rnd.Next(15)].ToString());
+            var problems=PathValidator.Validate(text);if(problems.Count==0)++valid;
+            var d=PathDocument.TryLoad(text,out _);if(d!=null)foreach(var t in d.Tracks)for(double time=-1;time<6;time+=.7){var s=PathSampler.Sample(t,time);Assert(!double.IsNaN(s.Front+s.Right+s.Up));}
+        }
+        else        // tree-level: type-confuse a random node, optionally drop a member
+        {
+            var root=PathJson.Parse(seed);var all=new List<JsonNode>();Collect(root,all);
+            var victim=all[rnd.Next(all.Count)];var r=repl[rnd.Next(repl.Length)];
+            if(rnd.Next(4)==0&&victim.IsObject&&victim.Members.Count>0)victim.Members.Remove(victim.Members.Keys.ElementAt(rnd.Next(victim.Members.Count)));
+            else{victim.Kind=r.Kind;victim.Bool=r.Bool;victim.Number=r.Number;victim.IsInteger=r.IsInteger;victim.String=r.String;victim.Items=r.Items==null?null:new List<JsonNode>();victim.Members=r.Members==null?null:new Dictionary<string,JsonNode>();}
+            var problems=PathValidator.Validate(root);if(problems.Count==0)++valid;
+            var d=PathDocument.TryLoad(root,out _);if(d!=null)foreach(var t in d.Tracks)for(double time=-1;time<6;time+=.7){var s=PathSampler.Sample(t,time);Assert(!double.IsNaN(s.Front+s.Right+s.Up));}
+        }
+    }
+    Assert(valid<200);
+});
 Console.WriteLine($"{passed} core checks passed");

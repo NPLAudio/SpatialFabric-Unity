@@ -46,6 +46,32 @@ CSV v1 remains compatible; v2 explicitly reassigns exact GUID/localFileId source
 only on confirmed Apply, with type/hash/stale/live guards and one Undo. Full panels are
 under Tools → SpatialFabric → Open Window. Engine modules are the only runtime dependencies.
 
+## Baked paths from Path Studio
+
+Path Studio paths ([Path v1](https://github.com/NPLAudio/SpatialFabric/blob/main/Specs/Path-v1.md),
+`*.sfpath.json`) can drive a Transform deterministically in Unity, with no network.
+
+1. Author the path in Path Studio and save it.
+2. Tools → SpatialFabric → Import Path Studio Path... validates the file (problems are listed in a
+   dialog and nothing is created when invalid) and stores it as a `SpatialPathAsset` in a folder
+   under Assets that you pick.
+3. Add `SpatialPathPlayer` to the object to move, assign the asset and a `SpatialStage` (empty =
+   the first stage in the same scene; empty track id = first track).
+4. Call `Play()` (or tick `playOnEnable`; the default is off, so nothing moves by itself). `Pause()`,
+   `Stop()` (rewinds), `Seek(seconds)` and `Evaluate(seconds)` (move without changing play state) are
+   also available; the inspector has a preview slider with Undo.
+
+Mapping: positions are canonical `[front, right, up]` normalized to the stage half extents
+(Unity stage-local `x = right`, `y = up`, `z = front`, honoring the stage flips and the same .05 m
+minimum half extent as the exporter). The result goes through the stage transform, so a rotated,
+scaled or moved stage carries the path with it. Only the position of the target is written
+(rotation/scale are untouched); a `SpatialObject` with a bound transform moves that transform.
+Loop, ping-pong, speed, easing and interpolation follow the spec and match its golden vectors
+(`Tools/CoreChecks`). Optional `gain`/`spread` curves are exposed read-only as `Gain`/`Spread`
+and not applied to anything. Invalid assets, a missing stage or an unknown track move nothing,
+set `LastError` and log one warning. The player never touches audio, OSC, the network or
+SpatialFabricManager. Stage listener-follow modes are not applied to path positions.
+
 ## Path Studio scene context export
 
 Tools → SpatialFabric → Export Path Studio Context... writes a read-only reference file
