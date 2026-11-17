@@ -74,7 +74,7 @@ namespace NPLAudio.SpatialFabric.Example.Editor
             }
             var stage=new GameObject("Stage — fixed canonical basis").AddComponent<SpatialStage>();stage.transform.SetParent(root);stage.transform.position=new Vector3(0,4.5f,0);stage.dimensionsMeters=new Vector3(20,15,8);stage.followPositionAndOrientation=false;
             var manager=new GameObject("SpatialFabric Manager").AddComponent<SpatialFabricManager>();manager.transform.SetParent(root);manager.stage=stage;
-            manager.spatialInputPort=8200;manager.playbackInputPort=9100;manager.admPort=50019;manager.customPort=9102;manager.monitorPort=9101;manager.enableInPlay=manager.enableInEditor=false;scene.manager=manager;
+            manager.spatialInputPort=8100;manager.playbackInputPort=9000;manager.admPort=50018;manager.customPort=9002;manager.monitorPort=9001;manager.enableInPlay=manager.enableInEditor=false;scene.manager=manager;
             scene.trackedObjects=new SpatialObject[4];
             Vector3[] positions={new Vector3(0,2,5),new Vector3(3,3,-3),new Vector3(-4,4,1),new Vector3(0,2,0)};
             for(int i=0;i<4;++i)
@@ -94,7 +94,7 @@ namespace NPLAudio.SpatialFabric.Example.Editor
             visitor.viewCamera=camera;visitor.rooms=scene;scene.visitor=visitor;var hud=scene.gameObject.AddComponent<ShowcaseRoomHud>();hud.rooms=scene;
             Sign("Hall guide","SPATIALFABRIC\nWASD + mouse | Esc cursor\nE play / Q stop / X stop all",-17.47f,-4.5f,2.3f,.24f,180);
             for(int i=0;i<4;++i)Sign("Room name "+i,(i+1)+" / "+plan.rooms[i].name.ToUpperInvariant(),-12.13f,plan.rooms[i].centerRight*.01f,3.25f,.3f);
-            Sign("Spatial instructions","4 OSC OBJECTS / 3 ANIMATED\nStart OSC explicitly in HUD\nADM 50019 / Custom 9102",11.97f,0,2.6f,.28f);
+            Sign("Spatial instructions","4 OSC OBJECTS / 3 ANIMATED\nStart OSC explicitly in HUD\nADM 50018 / Custom 9002",11.97f,0,2.6f,.28f);
             Sign("Mono instructions","WARM PERCUSSION / OUTPUT 1\nE play / Q stop\n/unity/playback/mono",-2.13f,13.5f,2.35f,.23f);
             Sign("Stereo instructions","STEREO GROOVE / MATCHING L-R\nE play / Q stop | L loop\n/unity/playback/stereo",-2.13f,21.5f,2.35f,.23f);
             Sign("Replay instructions","GLASS REPLAY / OUTPUT 2\nE start / Q cancel | R auto replay\n/unity/playback/replay",-2.13f,29.5f,2.35f,.23f);

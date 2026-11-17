@@ -27,8 +27,8 @@ namespace NPLAudio.SpatialFabric.Example.Editor
             var stage = new GameObject("Stage — fixed basis").AddComponent<SpatialStage>(); stage.transform.SetParent(root.transform);
             stage.dimensionsMeters = new Vector3(10,10,6);
             var manager = new GameObject("SpatialFabric Manager").AddComponent<SpatialFabricManager>(); manager.transform.SetParent(root.transform); manager.stage = stage;
-            // Side-by-side ports do not collide with an already-running Unreal showcase.
-            manager.spatialInputPort = 8200; manager.playbackInputPort = 9100; manager.admPort = 50019; manager.customPort = 9102; manager.monitorPort = 9101;
+            // Standard ports, identical to the Unreal plugin defaults, so one controller profile works for every engine.
+            manager.spatialInputPort = 8100; manager.playbackInputPort = 9000; manager.admPort = 50018; manager.customPort = 9002; manager.monitorPort = 9001;
             Vector3[] positions = {new Vector3(0,0,3),new Vector3(3,0,0),new Vector3(0,2,0),new Vector3(-2,0,-2)};
             string[] names = {"Front","Right","Up","Moving object"};
             for (int i = 0; i < positions.Length; ++i)

@@ -31,11 +31,11 @@ namespace NPLAudio.SpatialFabric.Example
                 bool loop=GUILayout.Toggle(cue.loop,"Loop");if(loop!=cue.loop)cue.SetLoop(loop);cue.autoReplay=GUILayout.Toggle(cue.autoReplay,"Auto replay");GUILayout.EndHorizontal();
                 if(!string.IsNullOrEmpty(cue.LastError))GUILayout.Label(cue.LastError);
             }
-            else GUILayout.Label(index==0?"Spatial data only. Start OSC explicitly below; track ADM 50019 / Custom 9102.":"Enter a playback room for its cue controls.");
+            else GUILayout.Label(index==0?"Spatial data only. Start OSC explicitly below; track ADM 50018 / Custom 9002.":"Enter a playback room for its cue controls.");
             GUILayout.Label("Direct PCM is not spatialized by these walls or OSC positions. No audio auto-starts.");
             if(settings)
             {
-                GUILayout.Space(8);GUILayout.Label("OSC inputs 127.0.0.1:8200 / 9100; state 9101");
+                GUILayout.Space(8);GUILayout.Label("OSC inputs 127.0.0.1:8100 / 9000; state 9001");
                 GUILayout.BeginHorizontal();
                 if(GUILayout.Button(rooms.manager.IsListening?"Stop local OSC":"Start OSC (explicit)"))
                 {

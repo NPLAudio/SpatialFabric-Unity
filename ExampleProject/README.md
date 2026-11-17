@@ -43,8 +43,8 @@ from the repo root, with the editor closed: `python Tools/build_native.py --inst
 Prepared PCM assets and original WAV sources are already included. Do not press E/Play
 unless you intend to use your physical output device.
 
-OSC: explicitly Start OSC in the HUD or manager window. Inputs `127.0.0.1:8200/9100`,
-ADM output `50019`, Custom `9102`, playback state `9101`. Cue bases:
+OSC: explicitly Start OSC in the HUD or manager window. Inputs `127.0.0.1:8100/9000`,
+ADM output `50018`, Custom `9002`, playback state `9001`. Cue bases:
 `/unity/playback/mono`, `/unity/playback/stereo`, `/unity/playback/replay`.
 Load `OSCControllerProfile.json` into the existing standalone OSC Controller for these
 ports/cue bases (loading it does not send or bind anything). Start Unreal/Unity tracking

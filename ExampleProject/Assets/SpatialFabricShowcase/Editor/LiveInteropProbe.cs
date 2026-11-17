@@ -22,16 +22,16 @@ namespace NPLAudio.SpatialFabric.Example.Editor
             string folder = args[index+1]; Directory.CreateDirectory(folder);
             EditorSceneManager.OpenScene(Array.IndexOf(args,"-spatialFabricRoomScene")>=0?ShowcaseRooms.RoomScenePath:BuildShowcase.ScenePath);
             var manager = UnityObjects.FindAll<SpatialFabricManager>().Single();
-            if (manager.spatialInputPort != 8200 || manager.playbackInputPort != 9100 || manager.admPort != 50019 || manager.customPort != 9102) throw new InvalidOperationException("Probe requires the generated side-by-side example ports");
+            if (manager.spatialInputPort != 8100 || manager.playbackInputPort != 9000 || manager.admPort != 50018 || manager.customPort != 9002) throw new InvalidOperationException("Probe requires the generated side-by-side example ports");
             manager.enableInEditor = true;
             if (!manager.StartNetworking()) throw new InvalidOperationException(manager.LastError);
             string before = EditorJsonUtility.ToJson(manager);
-            File.WriteAllText(Path.Combine(folder,"ready.json"),"{\"status\":\"ready\",\"spatial_port\":8200,\"playback_port\":9100}");
+            File.WriteAllText(Path.Combine(folder,"ready.json"),"{\"status\":\"ready\",\"spatial_port\":8100,\"playback_port\":9000}");
             double started = EditorApplication.timeSinceStartup;
             EditorApplication.CallbackFunction finish = null;
             finish = () =>
             {
-                if (EditorApplication.timeSinceStartup-started < 20) return;
+                if (EditorApplication.timeSinceStartup-started < 60) return;
                 EditorApplication.update -= finish;
                 bool same = before == EditorJsonUtility.ToJson(manager);
                 bool playing = SceneInventory.InScene<PlaybackCue>(manager.gameObject.scene).Any(cue => cue.IsPlaying);

@@ -31,8 +31,7 @@ Real HUD buttons expose cue/loop/replay/routing/OSC controls; no automatic sound
 Original prepared cues are assigned. See [ExampleProject/README.md](ExampleProject/README.md).
 Visual walls/OSC positions do not spatialize or acoustically isolate direct PCM.
 
-The controller profile is `ExampleProject/OSCControllerProfile.json`. Inputs 8200/9100,
-state monitor 9101, ADM 50019, Custom 9102 avoid Unreal defaults on the same computer.
+The controller profile is `ExampleProject/OSCControllerProfile.json` (cue bases only; the ports are the standard ones). All SpatialFabric engines share the same default ports so one controller profile works everywhere: spatial listener `8100`, playback control `9000`, playback state out `9001`, ADM out `50018`, Custom example out `9002`. Only one engine app can own the input ports at a time (binds are exclusive); a second engine fails with a clear bind error instead of sharing silently. To run two engines at once, change the ports on one of them.
 The original small SpatialExample scene remains a regression fixture, not the main demo.
 
 ## Live input (microphone / line in)

@@ -597,12 +597,12 @@ MonoBehaviour:
   enableInPlay: 0
   runInBackground: 1
   listenIp: 127.0.0.1
-  spatialInputPort: 8200
-  playbackInputPort: 9100
+  spatialInputPort: 8100
+  playbackInputPort: 9000
   targetIp: 127.0.0.1
-  admPort: 50019
-  customPort: 9102
-  monitorPort: 9101
+  admPort: 50018
+  customPort: 9002
+  monitorPort: 9001
   sendRateHz: 30
   sendAdm: 1
   sendCustom: 1
