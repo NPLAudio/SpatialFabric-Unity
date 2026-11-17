@@ -1,6 +1,17 @@
 # Changelog
 
-## Unreleased
+## 0.6.0 — acknowledgement/status feedback and example startup
+
+- Standard OSC `/ack` received/ignored/rejected/failed results and `/status` snapshots
+  go to the configured monitor destination (default 9001); request acceptance remains
+  separate from observed worker state.
+- Request-version tracking prevents stale asynchronous start-failure replies after
+  cancellation; playback prepares stale/unprepared PCM on demand.
+- Shared acknowledgement/decision fixtures and device-free lifecycle/invalid-device tests.
+- Interactive editor startup restores the saved four-room example only from a clean
+  empty/default scene, preserving dirty, saved and multi-scene work. No autoplay/networking.
+- Shared contracts/controller now live in the canonical SpatialFabric hub; Unreal and
+  Godot ports are SpatialFabric-Unreal and SpatialFabric-Godot.
 - Live input: `LiveInputCue`, native C ABI additions (`sf_live_*`, `sf_input_devices_json`), OSC play/stop/gain/state, discovery record and inspector. Silent tests only; macOS capture unbuilt.
 
 ## 0.5.0 — functional completion / deployment gates

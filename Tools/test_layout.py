@@ -5,8 +5,16 @@ PACKAGE=ROOT/'Packages/com.nplaudio.spatialfabric'
 class LayoutTests(unittest.TestCase):
     def test_related_repository_links(self):
         text=(ROOT/'README.md').read_text()
-        for name in ('SpatialFabric','SpatialFabric-Unity','SpatialFabric-Interop','AudioLoom'):
+        for name in ('SpatialFabric','SpatialFabric-Unreal','SpatialFabric-Unity','SpatialFabric-Godot','AudioLoom'):
             self.assertIn('https://github.com/NPLAudio/'+name,text)
+        self.assertNotIn('https://github.com/NPLAudio/SpatialFabric-Interop',text)
+        self.assertIn('https://github.com/NPLAudio/SpatialFabric/tree/main/Apps/OSCController',text)
+    def test_interop_probe_uses_shared_hub_argument(self):
+        text=(ROOT/'Tools/validate_interop.py').read_text()
+        self.assertIn("'--interop','--unreal',dest='interop'",text)
+        self.assertIn("args.interop/'Apps/OSCController'",text)
+        self.assertIn("args.interop/'Examples/OSCSceneQuery/scene_query.js'",text)
+        self.assertNotIn('args.unreal',text)
     def test_upm_identity(self):
         p=json.loads((PACKAGE/'package.json').read_text());self.assertEqual(p['name'],'com.nplaudio.spatialfabric');self.assertRegex(p['version'],r'^0\.\d+\.\d+$');self.assertEqual(set(p['dependencies']),{'com.unity.modules.audio','com.unity.modules.physics','com.unity.modules.imgui','com.unity.modules.jsonserialize'})
     def test_runtime_never_imports_editor(self):
@@ -18,6 +26,7 @@ class LayoutTests(unittest.TestCase):
             d=json.loads((PACKAGE/f'Tests/{mode}/SpatialFabric.{mode}Tests.asmdef').read_text());self.assertIn('TestAssemblies',d['optionalUnityReferences'])
     def test_vendored_contract_hashes(self):
         folder=PACKAGE/'Tests/EditMode/Fixtures';data=json.loads((folder/'PROVENANCE.json').read_text())
+        self.assertEqual(data['source'],'https://github.com/NPLAudio/SpatialFabric')
         for name,sha in data['sha256'].items():self.assertEqual(hashlib.sha256((folder/Path(name).name).read_bytes()).hexdigest(),sha)
     def test_example_uses_local_package(self):
         manifest=ROOT/'ExampleProject/Packages/manifest.json';d=json.loads(manifest.read_text());ref=d['dependencies']['com.nplaudio.spatialfabric'];self.assertTrue(ref.startswith('file:'));self.assertEqual((manifest.parent/ref[5:]).resolve(),PACKAGE.resolve());self.assertIn('com.nplaudio.spatialfabric',d['testables'])

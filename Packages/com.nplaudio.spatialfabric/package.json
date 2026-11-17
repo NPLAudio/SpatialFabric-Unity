@@ -1,6 +1,6 @@
 {
   "name": "com.nplaudio.spatialfabric",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "displayName": "SpatialFabric",
   "description": "Spatial OSC with Custom XYZ/AED templates, read-only discovery, routing CSV/radar and native Windows WASAPI playback. Development implementation; engine/platform parity is still in progress.",
   "unity": "6000.0",

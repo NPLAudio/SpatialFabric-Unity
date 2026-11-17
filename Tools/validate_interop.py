@@ -1,13 +1,13 @@
-"""Silent real Unity ↔ existing Unreal-repo Python/Node client compatibility probe.
+"""Silent real Unity ↔ shared-hub Python/Node client compatibility probe.
 Requires the generated example and the standard shared ports 8100/9000/50018/9002 free (close any Unreal/Godot instance that owns them).
 """
 import argparse,json,select,socket,subprocess,sys,tempfile,threading,time
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 def main():
-    p=argparse.ArgumentParser();p.add_argument('--unity',required=True,type=Path);p.add_argument('--unreal',required=True,type=Path);p.add_argument('--output',type=Path);p.add_argument('--rooms',action='store_true',help='Query the full walking room showcase (9 records)');args=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('--unity',required=True,type=Path);p.add_argument('--interop','--unreal',dest='interop',required=True,type=Path,help='SpatialFabric shared hub checkout (--unreal is a legacy alias)');p.add_argument('--output',type=Path);p.add_argument('--rooms',action='store_true',help='Query the full walking room showcase (9 records)');args=p.parse_args()
     folder=(args.output or Path(tempfile.mkdtemp(prefix='SpatialFabricUnityInterop-'))).resolve();folder.mkdir(parents=True,exist_ok=True)
-    sys.path.insert(0,str(args.unreal/'Apps/OSCController'))
+    sys.path.insert(0,str(args.interop/'Apps/OSCController'))
     from osc_controller.scene_query import query_scene, SceneQueryError
     from osc_controller.protocol import decode
     listeners=[];messages=[];stop=threading.Event();process=None
@@ -53,7 +53,7 @@ def main():
             (folder/f'python-{port}.json').write_text(json.dumps(scene,indent=2))
             results.append({'client':'existing Python','port':port,'records':scene['total'],'pages':len(scene['page_snapshot_times'])})
             time.sleep(.35)
-            output=subprocess.check_output(['node',str(args.unreal/'Examples/OSCSceneQuery/scene_query.js'),'127.0.0.1',str(port),'3'],text=True,timeout=12)
+            output=subprocess.check_output(['node',str(args.interop/'Examples/OSCSceneQuery/scene_query.js'),'127.0.0.1',str(port),'3'],text=True,timeout=12)
             scene=json.loads(output);verify(scene);(folder/f'node-{port}.json').write_text(output)
             results.append({'client':'existing Node','port':port,'records':scene['total'],'pages':len(scene['page_snapshot_times'])})
         if process.wait(timeout=120)!=0:raise RuntimeError('Unity probe exit failed')

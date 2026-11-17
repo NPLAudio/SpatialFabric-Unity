@@ -24,7 +24,7 @@ def main():
             if dest.exists() and dest.read_bytes()!=raw:raise RuntimeError('Refusing to replace modified source '+str(dest))
             shutil.copy2(path,dest)
     hashes['RoomLayout.json']=hashlib.sha256(payload.encode()).hexdigest()
-    manifest=json.dumps({'source':'NPLAudio/SpatialFabric v2.1.0 original room plan and procedural WAVs','license':'MIT for original content; no Unreal/Epic packages copied','units':'layout front/right/up centimeters; builder maps to Unity Z/X/Y meters','sha256':hashes},indent=2)+'\n'
+    manifest=json.dumps({'source':'https://github.com/NPLAudio/SpatialFabric-Unreal v2.1.0 original room plan and procedural WAVs','license':'MIT for original content; no Unreal/Epic packages copied','units':'layout front/right/up centimeters; builder maps to Unity Z/X/Y meters','sha256':hashes},indent=2)+'\n'
     if args.check:assert (target/'PROVENANCE.json').read_text()==manifest
     else:(target/'PROVENANCE.json').write_text(manifest,encoding='utf-8',newline='\n')
     print('Room plan and three original WAVs verified' if args.check else 'Prepared original room plan and three WAV sources')

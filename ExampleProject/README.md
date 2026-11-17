@@ -4,6 +4,8 @@ Open this directory in Unity **6000.6.9f1**, then open:
 
 `Assets/SpatialFabricShowcase/Scenes/RoomShowcase.unity`
 
+If Unity shows an empty/Untitled scene, use **Tools → SpatialFabric → Open four-room showcase** (or double-click that scene asset). The project now restores it automatically on a clean empty startup scene; modified, saved or multi-scene setups are left alone. This does not enter Play mode, start audio or enable OSC.
+
 Press **Play**. You start in an enclosed hallway with four separate demo rooms:
 
 1. **Spatial motion** — four OSC objects, three animated; fixed stage basis.

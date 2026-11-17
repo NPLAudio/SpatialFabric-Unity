@@ -40,6 +40,7 @@ namespace NPLAudio.SpatialFabric
         public ulong Overruns { get; private set; }
         public float LatencyMilliseconds { get; private set; }
         public bool ValidBase => OscCodec.ValidAddress(oscBase);
+        internal uint AudioRequestVersion { get; private set; }
         NativeLive.Session session;
         readonly PlaybackObservation observation = new PlaybackObservation();
         double nextPoll;
@@ -60,7 +61,7 @@ namespace NPLAudio.SpatialFabric
             }
             catch(Exception e) when(e is ArgumentException || e is InvalidOperationException) {LastError=e.Message;return false;}
         }
-        public void Stop() {if(session!=null && !session.IsClosed) {session.Stop();Observe(Clock);}}
+        public void Stop() {unchecked {++AudioRequestVersion;}if(session!=null && !session.IsClosed) {session.Stop();Observe(Clock);}}
         public bool SetGain(float value)
         {
             if(float.IsNaN(value) || float.IsInfinity(value) || value<0 || value>4) {LastError="Gain must be finite 0..4";return false;}

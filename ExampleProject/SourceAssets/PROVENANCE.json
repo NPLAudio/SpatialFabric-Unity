@@ -1,5 +1,5 @@
 {
-  "source": "NPLAudio/SpatialFabric v2.1.0 original room plan and procedural WAVs",
+  "source": "https://github.com/NPLAudio/SpatialFabric-Unreal v2.1.0 original room plan and procedural WAVs",
   "license": "MIT for original content; no Unreal/Epic packages copied",
   "units": "layout front/right/up centimeters; builder maps to Unity Z/X/Y meters",
   "sha256": {

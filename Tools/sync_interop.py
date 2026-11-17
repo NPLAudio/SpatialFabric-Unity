@@ -3,16 +3,18 @@ import argparse,hashlib,json
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 def main():
-    p=argparse.ArgumentParser();p.add_argument('--interop',type=Path,default=ROOT.parent/'SpatialFabric-Interop');p.add_argument('--check',action='store_true');args=p.parse_args()
+    hub=ROOT.parent/'SpatialFabric'
+    if not hub.exists():hub=ROOT.parent/'SpatialFabric-Interop' # Existing local checkout name before the GitHub rename.
+    p=argparse.ArgumentParser();p.add_argument('--interop',type=Path,default=hub);p.add_argument('--check',action='store_true');args=p.parse_args()
     target=ROOT/'Packages/com.nplaudio.spatialfabric/Tests/EditMode/Fixtures'
-    sources=['Fixtures/osc-v1.json','Fixtures/coordinates-v1.json','Fixtures/custom-v1.json','Schemas/scene-v1.schema.json']
+    sources=['Fixtures/osc-v1.json','Fixtures/coordinates-v1.json','Fixtures/custom-v1.json','Fixtures/ack-v1.json','Schemas/scene-v1.schema.json']
     hashes={}
     for name in sources:
         data=(args.interop/name).read_bytes();dest=target/Path(name).name;hashes[name]=hashlib.sha256(data).hexdigest()
         if args.check:
             if not dest.exists() or dest.read_bytes()!=data:raise SystemExit('Fixture differs: '+str(dest))
         else:dest.parent.mkdir(parents=True,exist_ok=True);dest.write_bytes(data)
-    manifest=json.dumps({'contract':'SpatialFabric interoperability v1','source':'SpatialFabric-Interop','sha256':hashes},indent=2)+'\n'
+    manifest=json.dumps({'contract':'SpatialFabric interoperability v1','source':'https://github.com/NPLAudio/SpatialFabric','sha256':hashes},indent=2)+'\n'
     path=target/'PROVENANCE.json'
     if args.check:
         if path.read_text()!=manifest:raise SystemExit('Provenance differs')

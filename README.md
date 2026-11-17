@@ -1,4 +1,4 @@
-# SpatialFabric for Unity 0.5 — local functional port
+# SpatialFabric for Unity 0.6.0 — local functional port
 
 SpatialFabric + AudioLoom functionality implemented for Unity: stage/listener mapping,
 explicit bindings and multiple OSC outputs, ADM/Custom protocols, read-only discovery,
@@ -10,9 +10,10 @@ See [Docs/PARITY.md](Docs/PARITY.md) and actual evidence in [VALIDATION.md](VALI
 
 | Repository | Purpose |
 |---|---|
-| [SpatialFabric](https://github.com/NPLAudio/SpatialFabric) | Unreal plugin, four-room example and standalone OSC Controller |
+| [SpatialFabric](https://github.com/NPLAudio/SpatialFabric) | Canonical shared hub: OSC specs, JSON schemas, golden fixtures and [OSC Controller](https://github.com/NPLAudio/SpatialFabric/tree/main/Apps/OSCController) |
+| [SpatialFabric-Unreal](https://github.com/NPLAudio/SpatialFabric-Unreal) | Unreal plugin and four-room example |
 | [SpatialFabric-Unity](https://github.com/NPLAudio/SpatialFabric-Unity) | Unity UPM port, native audio backend and four-room walking showcase |
-| [SpatialFabric-Interop](https://github.com/NPLAudio/SpatialFabric-Interop) | Shared OSC contracts, JSON schemas and golden wire fixtures |
+| [SpatialFabric-Godot](https://github.com/NPLAudio/SpatialFabric-Godot) | Godot implementation |
 | [AudioLoom](https://github.com/NPLAudio/AudioLoom) | Legacy standalone Unreal playback repository; access-controlled/private, integrated into SpatialFabric |
 
 Engine implementations share contracts, not engine assemblies. Validation for one engine
@@ -67,14 +68,17 @@ Local source: Package Manager → Install package from disk →
 output first for PCM: `python Tools/build_native.py --install` (MSVC 2022 x64 + Windows SDK).
 
 Local distribution: `python Tools/package_unity.py --include-built-native` creates
-`dist/0.5.0/com.nplaudio.spatialfabric-0.5.0.tgz`, CompleteSource ZIP, manifest and checksums.
+`dist/0.6.0/com.nplaudio.spatialfabric-0.6.0.tgz`, CompleteSource ZIP, manifest and checksums.
+The manifest records the full Git HEAD in `source_commit`: exact source revision for a
+clean committed snapshot, base revision only for a local uncommitted snapshot. Failed
+Git inspection is marked unknown. This does not certify locally built native binaries.
 The tarball includes the locally built Windows plugin and an importable four-room sample;
 Package Manager → Install package from tarball. Install URP before importing **Four-room
 walking showcase**; in a new project explicitly assign the sample's `Rendering/ShowcaseURP.asset`
 in Graphics and each Quality level. Keep your existing pipeline in an existing URP project.
 Import never changes project settings automatically. Built-in/HDRP sample materials are not supplied.
 
-**GitHub Actions is disabled by request across all four repositories. Validation is local;
+**GitHub Actions is disabled by request across the related repositories. Validation is local;
 existing workflow files and historical run links do not indicate active automation.**
 Git source publication is separate from release publication. Generated native binaries,
 archives and local validation logs are not committed; installable artifacts are built explicitly.
@@ -122,9 +126,9 @@ python -m unittest discover -s Tools -p 'test_*.py'
 python Tools/sync_interop.py --check
 python Tools/validate_unity.py --unity "C:/Program Files/Unity/Hub/Editor/6000.6.9f1/Editor/Unity.exe" --graphics --require-native
 python Tools/validate_rooms.py --unity "C:/Program Files/Unity/Hub/Editor/6000.6.9f1/Editor/Unity.exe"
-python Tools/validate_interop.py --unity "C:/Program Files/Unity/Hub/Editor/6000.6.9f1/Editor/Unity.exe" --unreal "../SpatialSandbox/Plugins/SpatialFabric" --rooms
+python Tools/validate_interop.py --unity "C:/Program Files/Unity/Hub/Editor/6000.6.9f1/Editor/Unity.exe" --interop "../SpatialFabric" --rooms
 python Tools/package_unity.py --include-built-native
-python Tools/validate_package.py --unity "C:/Program Files/Unity/Hub/Editor/6000.6.9f1/Editor/Unity.exe" --package dist/0.5.0/com.nplaudio.spatialfabric-0.5.0.tgz
+python Tools/validate_package.py --unity "C:/Program Files/Unity/Hub/Editor/6000.6.9f1/Editor/Unity.exe" --package dist/0.6.0/com.nplaudio.spatialfabric-0.6.0.tgz
 ```
 
 A separate batch `ValidatePersistence.Run` gate exercises saved-scene/additive unload
@@ -140,7 +144,9 @@ approval before claiming IL2CPP passed. Mac native source requires a real Mac SD
 ## Repository boundaries
 
 UPM package under Packages/, example under ExampleProject/, native C ABI under Native/,
-portable/editor/build probes under Tools/. Sibling SpatialFabric-Interop contains shared
-contracts/golden fixtures (vendored with hashes). The existing Unreal repository is intact.
+portable/editor/build probes under Tools/. The canonical SpatialFabric hub contains shared
+contracts/golden fixtures (vendored with hashes); SpatialFabric-Unreal is the Unreal port.
+`sync_interop.py` defaults to sibling `SpatialFabric`, with a fallback for an existing
+local `SpatialFabric-Interop` checkout; `--interop` selects an explicit hub checkout.
 Generated Library/build state, credentials and locally compiled DLL/dylib files are not
 committed. CompleteSource is filtered; archives/checksums are local development artifacts.

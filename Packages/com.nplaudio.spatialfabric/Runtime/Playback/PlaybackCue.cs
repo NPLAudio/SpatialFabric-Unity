@@ -36,6 +36,8 @@ namespace NPLAudio.SpatialFabric
         public int ActualBufferFrames { get; private set; }
         public bool ExclusiveActive { get; private set; }
         public bool ValidBase => OscCodec.ValidAddress(oscBase);
+        // Changes whenever a local or OSC action cancels/replaces a start request.
+        internal uint AudioRequestVersion { get; private set; }
         NativeAudio.Buffer buffer;
         NativeAudio.Player player;
         PreparedAudioAsset cachedAsset;
@@ -85,6 +87,7 @@ namespace NPLAudio.SpatialFabric
         }
         public void Stop()
         {
+            unchecked {++AudioRequestVersion;}
             observation.CancelReplay();
             if(player!=null && !player.IsClosed) {player.Stop();Observe(Clock,false);}
         }

@@ -39,6 +39,8 @@ namespace NPLAudio.SpatialFabric
         public long Sent { get; private set; }
         public long Received { get; private set; }
         OscEndpoint spatial, playback;
+        readonly Dictionary<PlaybackCue,uint> pendingPlayback = new Dictionary<PlaybackCue,uint>();
+        readonly Dictionary<LiveInputCue,uint> pendingLive = new Dictionary<LiveInputCue,uint>();
         readonly SceneQueryResponder query = new SceneQueryResponder();
         double nextAdm,nextCustom;
         sealed class OutputRuntime {public double next;public OutgoingBatch batch=new OutgoingBatch();}
@@ -63,17 +65,19 @@ namespace NPLAudio.SpatialFabric
             }
             catch (Exception error) { a.Dispose(); b.Dispose(); LastError = error.Message; return false; }
         }
-        public void StopNetworking() { spatial?.Dispose(); playback?.Dispose(); spatial = playback = null; }
+        public void StopNetworking() { spatial?.Dispose(); playback?.Dispose(); spatial = playback = null; pendingPlayback.Clear(); pendingLive.Clear(); }
         void OnEnable() { PlaybackEvents.StateChanged += OnPlaybackState; LiveInputEvents.StateChanged += OnLiveState; }
         void OnDisable() { PlaybackEvents.StateChanged -= OnPlaybackState; LiveInputEvents.StateChanged -= OnLiveState; StopNetworking(); }
         void OnLiveState(LiveInputCue cue,bool live)
         {
+            if(live)pendingLive.Remove(cue);
             if(!IsListening || !NetworkingAllowed || !ContainsScene(cue.gameObject.scene) || !cue.ValidBase)return;
             try {spatial.Send(targetIp,monitorPort,new OscMessage(cue.oscBase+"/state",OscArg.Float(live?1:0)));++Sent;}
             catch(Exception error) when(error is FormatException || error is ArgumentException || error is System.Net.Sockets.SocketException) {LastError=error.Message;}
         }
         void OnPlaybackState(PlaybackCue cue,bool playing)
         {
+            if(playing)pendingPlayback.Remove(cue);
             if(!IsListening || !NetworkingAllowed || !ContainsScene(cue.gameObject.scene) || !cue.ValidBase)return;
             try {spatial.Send(targetIp,monitorPort,new OscMessage(cue.oscBase+"/state",OscArg.Float(playing?1:0)));++Sent;}
             catch(Exception error) when(error is FormatException || error is ArgumentException || error is System.Net.Sockets.SocketException) {LastError=error.Message;}
@@ -85,6 +89,7 @@ namespace NPLAudio.SpatialFabric
         {
             if (!NetworkingAllowed) { if (spatial != null || playback != null) StopNetworking(); return; }
             if (!IsListening) return;
+            ReportStartFailures();
             Drain(spatial,now); Drain(playback,now);
             if (stage == null || !ContainsScene(stage.gameObject.scene)) return;
             if(outputs.Count>0){TickOutputs(now);return;}
@@ -143,21 +148,63 @@ namespace NPLAudio.SpatialFabric
                 catch (Exception error) when (error is FormatException || error is ArgumentException || error is System.Net.Sockets.SocketException) { LastError = error.Message; }
             }
         }
+        void SendMonitor(OscMessage message)
+        {
+            try {spatial.Send(targetIp,monitorPort,message);++Sent;}
+            catch(Exception error) when(error is FormatException || error is ArgumentException || error is System.Net.Sockets.SocketException) {LastError=error.Message;}
+        }
+        void ReportStartFailures()
+        {
+            // A request may fail on the native thread without ever producing a started sequence.
+            foreach(var cue in new List<PlaybackCue>(pendingPlayback.Keys))
+            {
+                if(cue==null || !cue.isActiveAndEnabled || !ContainsScene(cue.gameObject.scene) || pendingPlayback[cue]!=cue.AudioRequestVersion || cue.WorkerState==Audio.AudioWorkerState.Stopped) {pendingPlayback.Remove(cue);continue;}
+                if(cue.WorkerState!=Audio.AudioWorkerState.Failed)continue;
+                pendingPlayback.Remove(cue);LastError=cue.LastError;
+                SendMonitor(PlaybackControl.Ack(cue.oscBase,"play","failed",cue.IsPlaying,cue.LastError));
+            }
+            foreach(var cue in new List<LiveInputCue>(pendingLive.Keys))
+            {
+                if(cue==null || !cue.isActiveAndEnabled || !ContainsScene(cue.gameObject.scene) || pendingLive[cue]!=cue.AudioRequestVersion || cue.WorkerState==Audio.AudioWorkerState.Stopped) {pendingLive.Remove(cue);continue;}
+                if(cue.WorkerState!=Audio.AudioWorkerState.Failed)continue;
+                pendingLive.Remove(cue);LastError=cue.LastError;
+                SendMonitor(PlaybackControl.Ack(cue.oscBase,"play","failed",cue.IsLive,cue.LastError));
+            }
+        }
+        void DispatchCommand(OscMessage message,string cueBase,bool live,Func<bool> playing,Func<bool> start,Action stop,Action loop,Action gain,Func<string> error)
+        {
+            if(!message.Address.StartsWith(cueBase+"/",StringComparison.Ordinal))return;
+            string command=message.Address.Substring(cueBase.Length+1);
+            string result=PlaybackControl.Decide(command,message,live),detail="";
+            if(result=="received")
+            {
+                switch(command)
+                {
+                    case "play": if(!start()) {result="failed";detail=error();LastError=detail;} break;
+                    case "stop": stop(); break;
+                    case "loop": loop(); break;
+                    case "gain": gain(); break;
+                }
+            }
+            SendMonitor(PlaybackControl.Ack(cueBase,command,result,playing(),detail));
+            if((command=="status" && result=="received") || command=="stop")
+                SendMonitor(new OscMessage(cueBase+"/state",OscArg.Float(playing()?1:0)));
+        }
         void DispatchPlayback(OscMessage message)
         {
             foreach (var cue in SceneInventory.InWorld<PlaybackCue>(this))
             {
-                if (!cue.isActiveAndEnabled || !cue.ValidBase) continue;
-                if (message.Address == cue.oscBase+"/play" && PlaybackControl.Play(message)) { cue.TryPlay(); LastError = cue.LastError; }
-                else if (message.Address == cue.oscBase+"/stop") cue.Stop();
-                else if (message.Address == cue.oscBase+"/loop") cue.SetLoop(PlaybackControl.Loop(message));
+                if (!cue.ValidBase) continue;
+                DispatchCommand(message,cue.oscBase,false,()=>cue.IsPlaying,
+                    ()=>{pendingPlayback.Remove(cue);bool ok=cue.TryPlay();if(ok)pendingPlayback[cue]=cue.AudioRequestVersion;return ok;},
+                    ()=>{pendingPlayback.Remove(cue);cue.Stop();},()=>cue.SetLoop(PlaybackControl.Loop(message)),()=>{},()=>cue.LastError);
             }
-            foreach (var live in SceneInventory.InWorld<LiveInputCue>(this))
+            foreach (var cue in SceneInventory.InWorld<LiveInputCue>(this))
             {
-                if (!live.isActiveAndEnabled || !live.ValidBase) continue;
-                if (message.Address == live.oscBase+"/play" && PlaybackControl.Play(message)) { live.TryStart(); LastError = live.LastError; }
-                else if (message.Address == live.oscBase+"/stop") live.Stop();
-                else if (message.Address == live.oscBase+"/gain" && PlaybackControl.Gain(message,out float gain)) live.SetGain(gain);
+                if (!cue.ValidBase) continue;
+                DispatchCommand(message,cue.oscBase,true,()=>cue.IsLive,
+                    ()=>{pendingLive.Remove(cue);bool ok=cue.TryStart();if(ok)pendingLive[cue]=cue.AudioRequestVersion;return ok;},
+                    ()=>{pendingLive.Remove(cue);cue.Stop();},()=>{},()=>{PlaybackControl.Gain(message,out float gain);cue.SetGain(gain);},()=>cue.LastError);
             }
         }
     }

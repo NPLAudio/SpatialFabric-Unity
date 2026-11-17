@@ -10,7 +10,34 @@ namespace NPLAudio.SpatialFabric.Osc
             foreach(var arg in message.Arguments)if(arg.Tag=='i')return (int)arg.Value>=1;
             return false;
         }
-        /// <summary>Live-input gain: first float anywhere, else first int; must be finite 0..4. Anything else is ignored.</summary>
+        /// <summary>Pure command decision; received play means submit a request, not observed playing.</summary>
+        public static string Decide(string command,OscMessage message,bool live)
+        {
+            switch(command)
+            {
+                case "ack": case "state": return "ignored";
+                case "status": return message.Arguments.Length==0?"received":"rejected";
+                case "play": return Play(message)?"received":"ignored";
+                case "stop": return "received";
+                case "loop": return live?"rejected":message.Arguments.Length==0 || HasNumber(message)?"received":"ignored";
+                case "gain": return live && Gain(message,out _)?"received":"rejected";
+                default: return "rejected";
+            }
+        }
+        static bool HasNumber(OscMessage message)
+        {
+            foreach(var arg in message.Arguments)if(arg.Tag=='f' || arg.Tag=='i')return true;
+            return false;
+        }
+        public static string SanitizeCommand(string command)
+        {
+            var text=new System.Text.StringBuilder();
+            foreach(char c in command??"") {if(text.Length==32)break;text.Append(c>=' ' && c<='~' && c!='/'?c:'_');}
+            return text.ToString();
+        }
+        public static OscMessage Ack(string cueBase,string command,string result,bool playing,string detail="") =>
+            new OscMessage(cueBase+"/ack",OscArg.String(SanitizeCommand(command)),OscArg.String(result),OscArg.Int(playing?1:0),OscArg.String(detail??""));
+        /// <summary>Live-input gain: first float anywhere, else first int; must be finite 0..4.</summary>
         public static bool Gain(OscMessage message,out float gain)
         {
             gain=0;

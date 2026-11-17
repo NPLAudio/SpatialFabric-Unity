@@ -126,4 +126,24 @@ Check("AudioLoom play/loop half-threshold distinction",()=>{var m=new OscMessage
 Check("AudioLoom float precedence across mixed args",()=>{var m=new OscMessage("/cue",OscArg.Int(1),OscArg.String("metadata"),OscArg.Float(0));Assert(!PlaybackControl.Play(m) && !PlaybackControl.Loop(m));});
 Check("AudioLoom address-only play but loop off",()=>{var m=new OscMessage("/cue");Assert(PlaybackControl.Play(m) && !PlaybackControl.Loop(m));});
 Check("AudioLoom unknown nonnumeric payload never plays",()=>{var m=new OscMessage("/cue",OscArg.String("1"),new OscArg('T',true));Assert(!PlaybackControl.Play(m) && !PlaybackControl.Loop(m));});
+using(var ackFixture=JsonDocument.Parse(File.ReadAllText(Path.Combine(Path.GetDirectoryName(args[0]),"ack-v1.json"))))
+{
+    foreach(var row in ackFixture.RootElement.GetProperty("vectors").EnumerateArray())
+        Check("ack golden "+row.GetProperty("name").GetString(),()=>
+        {
+            var message=new OscMessage(row.GetProperty("address").GetString(),OscArg.String(row.GetProperty("command").GetString()),OscArg.String(row.GetProperty("result").GetString()),OscArg.Int(row.GetProperty("playing").GetInt32()),OscArg.String(row.GetProperty("detail").GetString()));
+            Assert(Convert.ToHexString(OscCodec.Encode(message)).ToLowerInvariant()==row.GetProperty("hex").GetString());
+            string cueBase=message.Address.Substring(0,message.Address.Length-4);
+            Assert(OscCodec.Encode(PlaybackControl.Ack(cueBase,(string)message.Arguments[0].Value,(string)message.Arguments[1].Value,(int)message.Arguments[2].Value!=0,(string)message.Arguments[3].Value)).SequenceEqual(OscCodec.Encode(message)));
+        });
+    foreach(var row in ackFixture.RootElement.GetProperty("decisions").EnumerateArray())
+        Check("ack decision "+row.GetProperty("kind").GetString()+" "+row.GetProperty("op").GetString()+" "+row.GetProperty("args").GetRawText(),()=>
+        {
+            var arguments=row.GetProperty("args").EnumerateArray().Select(a=>a[0].GetString() switch {"f"=>OscArg.Float(a[1].GetSingle()),"i"=>OscArg.Int(a[1].GetInt32()),_=>OscArg.String(a[1].GetString())}).ToArray();
+            string command=row.GetProperty("op").GetString();
+            Assert(PlaybackControl.Decide(command,new OscMessage("/cue/"+command,arguments),row.GetProperty("kind").GetString()=="live")==row.GetProperty("result").GetString());
+        });
+}
+Check("ack command sanitization and bound",()=>Assert(PlaybackControl.SanitizeCommand("x/\n"+new string('a',50))=="x__"+new string('a',29)));
+Check("status payload rejected",()=>Assert(PlaybackControl.Decide("status",new OscMessage("/cue/status",OscArg.Int(1)),false)=="rejected"));
 Console.WriteLine($"{passed} core checks passed");

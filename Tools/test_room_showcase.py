@@ -16,6 +16,14 @@ class RoomShowcaseTests(unittest.TestCase):
         for name in ['MonoCue','StereoLoop','ReplayCue']:self.assertTrue((folder/f'GeneratedRooms/SW_SF_{name}.asset').is_file())
         text=scene.read_text();self.assertIn('enableInEditor: 0',text);self.assertIn('enableInPlay: 0',text)
         for cue in ['mono','stereo','replay']:self.assertIn('/unity/playback/'+cue,text)
+    def test_empty_startup_scene_restore_is_guarded(self):
+        text=(EXAMPLE/'Assets/SpatialFabricShowcase/Editor/ExampleSceneStartup.cs').read_text()
+        for guard in ['Application.isBatchMode','SessionState.GetBool','isPlayingOrWillChangePlaymode','SceneManager.sceneCount != 1','scene.isDirty','string.IsNullOrEmpty(scene.path)','roots.Length == 0','File.Exists(ShowcaseRooms.RoomScenePath)']:
+            self.assertIn(guard,text)
+        self.assertIn('BuildRoomShowcase.Open()',text)
+        self.assertNotIn('NewScene(',text)
+        self.assertNotIn('TryPlay(',text)
+        self.assertNotIn('StartNetworking(',text)
     def test_signs_use_depth_testing_not_overlay(self):
         shader=(EXAMPLE/'Assets/SpatialFabricShowcase/RoomText.shader').read_text();self.assertIn('ZTest LEqual',shader);self.assertNotIn('ZTest Always',shader)
         builder=(EXAMPLE/'Assets/SpatialFabricShowcase/Editor/BuildRoomShowcase.cs').read_text();self.assertIn('label.characterSize=size*.1f',builder)
