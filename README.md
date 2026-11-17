@@ -1,4 +1,4 @@
-# SpatialFabric for Unity 0.6.0 — local functional port
+# SpatialFabric for Unity 0.7.0 — local functional port
 
 SpatialFabric + AudioLoom functionality implemented for Unity: stage/listener mapping,
 explicit bindings and multiple OSC outputs, ADM/Custom protocols, read-only discovery,
@@ -68,7 +68,7 @@ Local source: Package Manager → Install package from disk →
 output first for PCM: `python Tools/build_native.py --install` (MSVC 2022 x64 + Windows SDK).
 
 Local distribution: `python Tools/package_unity.py --include-built-native` creates
-`dist/0.6.0/com.nplaudio.spatialfabric-0.6.0.tgz`, CompleteSource ZIP, manifest and checksums.
+`dist/0.7.0/com.nplaudio.spatialfabric-0.7.0.tgz`, CompleteSource ZIP, manifest and checksums.
 The manifest records the full Git HEAD in `source_commit`: exact source revision for a
 clean committed snapshot, base revision only for a local uncommitted snapshot. Failed
 Git inspection is marked unknown. This does not certify locally built native binaries.
@@ -128,7 +128,7 @@ python Tools/validate_unity.py --unity "C:/Program Files/Unity/Hub/Editor/6000.6
 python Tools/validate_rooms.py --unity "C:/Program Files/Unity/Hub/Editor/6000.6.9f1/Editor/Unity.exe"
 python Tools/validate_interop.py --unity "C:/Program Files/Unity/Hub/Editor/6000.6.9f1/Editor/Unity.exe" --interop "../SpatialFabric" --rooms
 python Tools/package_unity.py --include-built-native
-python Tools/validate_package.py --unity "C:/Program Files/Unity/Hub/Editor/6000.6.9f1/Editor/Unity.exe" --package dist/0.6.0/com.nplaudio.spatialfabric-0.6.0.tgz
+python Tools/validate_package.py --unity "C:/Program Files/Unity/Hub/Editor/6000.6.9f1/Editor/Unity.exe" --package dist/0.7.0/com.nplaudio.spatialfabric-0.7.0.tgz
 ```
 
 A separate batch `ValidatePersistence.Run` gate exercises saved-scene/additive unload

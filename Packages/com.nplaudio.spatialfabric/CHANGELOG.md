@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.7.0 — baked paths and Path Studio context export
 
 - Baked path playback: `SpatialPathPlayer` moves a Transform from a Path Studio Path v1 file
   (`SpatialPathAsset`, Tools → SpatialFabric → Import Path Studio Path...). Pure-C# strict JSON

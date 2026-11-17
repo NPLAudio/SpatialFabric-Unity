@@ -1,4 +1,4 @@
-# SpatialFabric / AudioLoom Unity port 0.6.0
+# SpatialFabric / AudioLoom Unity port 0.7.0
 
 ## Authoring and routing
 

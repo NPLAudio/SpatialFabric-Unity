@@ -1,4 +1,4 @@
-# SpatialFabric for Unity 0.6.0
+# SpatialFabric for Unity 0.7.0
 
 Functional SpatialFabric/AudioLoom port: stage/listener mapping, explicit pose/object
 bindings, multiple independently configured ADM/Custom destinations with target overrides,
