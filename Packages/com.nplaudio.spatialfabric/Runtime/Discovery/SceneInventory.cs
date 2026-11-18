@@ -54,7 +54,8 @@ namespace NPLAudio.SpatialFabric
         public float duration_seconds;
         public bool registered, playing, loop, auto_replay, backend_available, pcm_prepared, replay_pending, exclusive_requested, exclusive_active;
         public int buffer_ms_requested, actual_output_channels, actual_output_rate, actual_buffer_frames;
-        public string worker_state, end_reason;
+        public string worker_state, end_reason, output_mode;
+        public double output_latency_ms = -1;
         public string input_device_id;
         public int input_channel, actual_input_channels, actual_input_rate;
         public float input_peak, latency_ms;
@@ -191,9 +192,9 @@ namespace NPLAudio.SpatialFabric
             }
             foreach (var cue in InWorld<PlaybackCue>(owner))
             {
-                var row = Row("playback",cue); row.osc_base = cue.oscBase;
-                row.controls = new SceneControls {play = cue.oscBase+"/play",stop = cue.oscBase+"/stop",loop = cue.oscBase+"/loop"};
-                row.state_address = cue.oscBase+"/state"; row.configured_device_id = cue.configuredDeviceId;
+                var row = Row("playback",cue); row.osc_base = cue.EffectiveOscBase;
+                row.controls = new SceneControls {play = cue.EffectiveOscBase+"/play",stop = cue.EffectiveOscBase+"/stop",loop = cue.EffectiveOscBase+"/loop"};
+                row.state_address = cue.EffectiveOscBase+"/state"; row.configured_device_id = cue.configuredDeviceId;
                 row.output_channel = cue.outputChannel; row.channel_policy = cue.outputChannel == 0 ? "corresponding_source_device_channels" : "first_source_channel_to_selected_output";
                 // No AssetDatabase.Load, Resources.Load, GetData, LoadAudioData or device enumeration.
                 row.sound_path = cue.preparedAudio != null ? cue.preparedAudio.SourceName : cue.clip != null ? cue.clip.name : "";
@@ -204,7 +205,8 @@ namespace NPLAudio.SpatialFabric
                 row.worker_state = cue.WorkerState.ToString(); row.end_reason = cue.EndReason.ToString(); row.replay_pending = cue.ReplayPending;
                 row.exclusive_requested = cue.exclusiveRequested; row.buffer_ms_requested = cue.bufferMsRequested;
                 row.exclusive_active = cue.ExclusiveActive; row.actual_output_channels = cue.ActualOutputChannels;
-                row.actual_output_rate = cue.ActualOutputRate; row.actual_buffer_frames = cue.ActualBufferFrames; rows.Add(row);
+                row.actual_output_rate = cue.ActualOutputRate; row.actual_buffer_frames = cue.ActualBufferFrames;
+                row.output_mode = cue.OutputMode.ToString(); row.output_latency_ms = cue.OutputLatencyMilliseconds; rows.Add(row);
             }
             foreach (var live in InWorld<LiveInputCue>(owner))
             {
@@ -216,6 +218,7 @@ namespace NPLAudio.SpatialFabric
                 row.playing = live.IsLive; row.last_error = live.LastError; row.registered = live.isActiveAndEnabled; row.backend_available = live.BackendAvailable;
                 row.worker_state = live.WorkerState.ToString(); row.end_reason = live.EndReason.ToString(); row.exclusive_requested = live.exclusiveOutputRequested; row.buffer_ms_requested = live.bufferMsRequested;
                 row.actual_input_channels = live.ActualInputChannels; row.actual_input_rate = live.ActualInputRate; row.actual_output_channels = live.ActualOutputChannels; row.actual_output_rate = live.ActualOutputRate;
+                row.output_mode = live.OutputMode.ToString(); row.output_latency_ms = live.OutputLatencyMilliseconds;
                 row.input_peak = live.InputPeak; row.latency_ms = live.LatencyMilliseconds; row.underruns = live.Underruns; row.overruns = live.Overruns; rows.Add(row);
             }
             rows.Sort((a,b) => string.CompareOrdinal(a.key,b.key));

@@ -1,46 +1,127 @@
-# Port completion / validation boundary — Unity 0.5
+# AudioLoom playback parity
 
-"Implemented" describes code and controls, **not physical output certification**. Do not
-advertise macOS or IL2CPP validation before the external gates below are actually passed.
-The Unreal repository remains a separate, unchanged implementation.
+Implementation details, changed-file manifest and commands:
+[AudioLoomUnityParity.md](AudioLoomUnityParity.md). The shared
+[playback parity contract](https://github.com/NPLAudio/SpatialFabric/blob/main/Specs/Playback-Parity-v1.md)
+defines the baseline, not interchangeable Unity/Unreal asset identifiers.
 
-| Capability | Unity implementation | Evidence / remaining gate |
-|---|---|---|
-| Stage dimensions, flips, virtual listener | Off / position-only / position+orientation, explicit root; authored stage never moves | Coordinate/follow tests; room stage fixed |
-| Binding/registry identity | Stable saved-scene/editor IDs, explicit transform/label, per-protocol and per-destination IDs; unique live prefab instance keys | Save/reload, prefab import/override/Undo and runtime clone tests |
-| Loaded world scope | Owner scene by default; explicit `additionalScenePaths` includes loaded additive scenes, no automatic global search | Isolation/opt-in/additive unload persistence probe |
-| ADM | XYZ/AED/Both, coherent sphere limit, gain/width/mute/name metadata | Golden vectors and actual UDP tests |
-| Custom | XYZ/AED, packed/discrete, aliases, fields, ranges/reverse ranges, preflight | Shared exact packet vectors and actual UDP/recovery tests; stricter invalid-input rules intentional |
-| Output routing | Multiple independent destinations, individual rate/change caches, per-binding destination enable/ID/field overrides | Multiple real receiver/ID/pose tests |
-| OSC safety/lifecycle | Literal exact-bind IPv4, bounded atomic decoding/queues, transactional multi-bind, paused/background editor service | Codec/socket/timeScale/Editor Pause tests and live capture; OS suspension is not guaranteed |
-| Discovery | Schema-v1, sender-only reply, opt-in remote disclosure, rate/page/chunk bounds, local API, read-only cached inventory | Existing Python/Node clients and native player; no hardware enumeration/preparation/play in query |
-| Direct PCM | Immutable buffers, bounded WAV preparation, channel mapping, rate conversion, loop/EOF/drain/cancellation | Native offline/lifetime/cancel/fail-closed tests; physical channels/fidelity/latency still unverified |
-| Windows backend | WASAPI shared and requested exclusive mode, actual worker state, stable device routing, no fallback | Editor + Mono player tested; physical/exclusive/hot-unplug listening acceptance remains |
-| macOS backend | Core Audio AudioQueue, exact UID routing, discrete channels, hog-mode exclusive requests, device loss/cleanup | **ARM64 native build/silent tests pass hosted macOS CI; Mac Unity/player, Intel/universal and physical hardware remain unverified.** |
-| Replay/state | AudioLoom-compatible float-first trigger thresholds, observed real start/end counters, unscaled cancellable natural-end replay, OSC state feedback | Synthetic policy traces + actual failed-device/no-false-ack tests; real audible drain/replay acceptance remains |
-| CSV | v1 route compatibility + v2 exact GUID/localFileId source assignment, whole-file preview/stale guards/one Undo | Source assignment/type/hash/concurrent-edit/Undo tests; explicit Apply may load selected assets, never native PCM/transport |
-| Editor workflows | Stage, Objects, Outputs, Playback, CSV, Diagnostics; binding creation, bulk IDs/mute, multi-cue inspector/device/source controls | All panels repaint without startup I/O; prefab override/Undo tests |
-| Radar | Top/Front/Side/isometric, selectable real objects, bounded view-only trails | Projection/UI tests; history is authoring data, not renderer acknowledgement |
-| Room showcase | Four enclosed rooms/hall, original walker, three original prepared cues, real explicit HUD/keyboard/OSC controls | 44 editor + 51 player room checks, five actual rendered views; no autoplay/listening |
-| Deployment | Windows Mono standalone and locally packaged UPM/sample consumer tooling | Clean-consumer results in VALIDATION.md; see IL2CPP gate below |
+## Closed audited gaps
+
+- Per-cue fixed/random min/max natural-end replay with deterministic seeded selection
+  once per completion, cancellation and zero-delay support.
+- Runtime-only `playOnStart`, false by default; editor/import/discovery remain silent.
+- Blank-derived unique OSC bases, preserved serialized overrides, duplicate diagnostics,
+  and feedback suppression before dispatch, including reflected nested-base traffic.
+- Main-tick restart of active device/channel/exclusive/buffer/source changes; idle
+  editing never prepares or starts audio. Restart begins the source from the start.
+- Native Windows same-endpoint exclusive-preferred/shared fallback, actual mode and
+  cached OS output-path latency. Missing-device fail-closed policy remains.
+- Existing source import, manager, stopped-only CSV workflow and Undo/persistence
+  remain. CSV leaves random/startup settings untouched; it is not Unreal asset import.
+
+Derived defaults include scene-instance and hierarchy identity. They can change on
+reload/reorder/reparent: author an explicit base for persistent controller profiles.
+Do not automatically replace an existing `/unity/playback/cue` literal on upgrade;
+shared explicit addresses remain supported fan-out and generate diagnostics.
+
+Native diagnostic APIs are optional for older ABI-v1 libraries. Old binaries remain
+loadable but cannot provide the new fallback behavior/diagnostics. Build/deploy the
+updated native plugin explicitly using `python Tools/build_native.py --install`
+with the example closed. This changes a DLL, not physical device routing.
+
+## Broader spatial-port surface
+
+The AudioLoom follow-up does not replace the existing spatial implementation or
+its historical validation record in [../VALIDATION.md](../VALIDATION.md).
+
+| Capability | Retained Unity implementation |
+|---|---|
+| Stage/listener | Stage dimensions/flips, off/position/orientation follow, fixed authored stage |
+| Binding identity | Saved-scene/editor IDs, prefab/live-instance keys, per-protocol/destination IDs |
+| Loaded worlds | Owner scene by default, explicit opt-in loaded additive scenes |
+| ADM | XYZ/AED/Both, coherent sphere limit, gain/width/mute/name metadata |
+| Custom | XYZ/AED, packed/discrete, aliases, fields, ranges and preflight |
+| Output routing | Independent destinations, change/rate caches, per-binding overrides |
+| OSC lifecycle | Exact IPv4 binds, bounded atomic decoding/queues, transactional binds, paused editor service |
+| Discovery | Schema-v1, sender-only reply, remote opt-in, bounds, read-only cached inventory |
+| Direct PCM | Immutable bounded preparation, routing/rate conversion, loop/EOF/drain/cancellation |
+| Windows | WASAPI shared/exclusive-preferred with same-endpoint fallback; fail-closed configured routing |
+| macOS | Core Audio AudioQueue, exact UID routing, discrete channels, hog-mode requests |
+| CSV | v1 routes/v2 GUID-localFileId sources, preview/stale guards/one Undo |
+| Authoring | Stage/Objects/Outputs/Playback/CSV/Diagnostics, prefab overrides, bulk controls |
+| Radar | Top/Front/Side/isometric, selection and bounded view-only trails |
+| Showcase/deployment | Four-room walker/cues/HUD, Windows Mono/IL2CPP Development-player checks and UPM/sample consumer tooling |
+
+Saved Unity keys and engine GUIDs replace Unreal actors/UObjects/SoundWave paths;
+CSV asset references are not interchangeable. Custom field injection is rejected
+rather than guessed. Native PCM never falls back to AudioSource. OSC, PCM, visual
+walls and physical renderer acknowledgement remain separate.
+
+## Fresh software checks
+
+- Portable CoreChecks: **196 passed**.
+- Python Tools: **52 passed, 2 skipped**.
+- Windows native renderer/lifecycle: **55 passed**.
+- Fake-COM WASAPI negotiation/diagnostics: **55 passed**; included in the default
+  Windows build script as well as CMake/CTest.
+- Runtime, editor and EditMode/PlayMode test assemblies compiled against installed
+  Unity **6000.6.9f1** assemblies: **0 errors**. The source-change regression was
+  included in the final compile pass.
+
+- **Actual Unity engine execution:** **81/81 EditMode + 6/6 PlayMode passed**, zero
+  skips/failures, with `--graphics --require-native` in a disposable project. The final
+  run used a freshly rebuilt current native DLL installed only in that temporary copy.
+  Evidence: `C:/Users/davo_/AppData/Local/Temp/SpatialFabricUnityValidation-m62necnh/`.
+- The earlier licensing error is historical: activation succeeded afterward and the
+  current Editor accepted the license. No activation changes were made by this work.
+- Fixed a test's flat Editor JSON assumption: Unity 6000.6 wraps MonoBehaviour
+  fields. Round-tripping actual `EditorJsonUtility.ToJson` data verifies preservation.
+
+Repeat safely with `python Tools/validate_unity.py --unity /path/to/Unity --isolated
+--graphics --require-native`. Isolation copies authored inputs/current package,
+never reuses working Library/Temp, disables engine audio and assigns a unique
+validation persistent-data identity. Unity may write an additional internal result
+beneath LocalLow despite `-testResults`; it must not share the example's identity.
+The validator checks individual NUnit cases/counts and only allows explicit known
+headless/optional-native skips when those capabilities were not required.
+
+## Actual Windows player checks
+
+Both **Mono and IL2CPP Development players built and ran successfully** with the
+fresh native DLL. JSON independently confirms native availability, offline PCM/EOF,
+invalid-device refusal, no active playback and 9 scene records. No real stream opens.
+
+- Mono: `C:/Users/davo_/AppData/Local/Temp/SpatialFabricUnityPlayer-in8uzb2i/`.
+- IL2CPP: `C:/Users/davo_/AppData/Local/Temp/SpatialFabricUnityPlayer-0_cf4jwx/`.
+
+At the user's request, installed **Windows Build Support (IL2CPP)** for 6000.6.9f1
+using the official Unity CLI. No other modules were installed. The missing-module
+gate is superseded by the successful actual player check, not silently waived.
+
+Repeat with `python Tools/validate_player.py --unity /path/to/Unity --isolated
+--native-dll /path/to/current/SpatialFabricAudio.dll` (add `--il2cpp` for IL2CPP).
+The override installs only into the isolated copy; evidence must be outside both
+repo and source project (including custom projects). Deployed DLL hash must match.
+The gate checks individual smoke assertions, not just process exit or status text.
+An additional **non-Development IL2CPP player** also passed at
+`C:/Users/davo_/AppData/Local/Temp/SpatialFabricUnityPlayer-whkiijgj/`. Only the disposable
+build driver's options changed to StrictMode without Development; source stayed
+unchanged and stripping used copied project defaults. These are validation players,
+not clean-snapshot release publications.
 
 ## External validation gates (not silently waived)
 
-1. **Physical audio acceptance:** correct real outputs, stereo image, EOF/replay timing,
-   device loss, exclusive compatibility and sustained latency/fidelity on target hardware.
-2. **macOS:** ARM64 native compilation/silent CTest passed hosted CI. Run Mac Unity/player,
-   Intel/universal and physical Core Audio checks before certification.
-   `bash Tools/build_native_macos.sh --install`; native-only CI does not certify those.
-3. **Windows IL2CPP:** this editor lacks the Windows IL2CPP module. CLI installation
-   reported `ELEVATION_REQUIRED`; no automatic elevation/license acceptance was performed.
-   Install the module with administrator approval, then run the provided IL2CPP smoke.
-4. Older Unity releases/other hardware remain outside the local certification matrix.
-   Linux/WebGL direct-device playback is not advertised.
+No physical audio/microphone, macOS, cross-engine asset migration or acoustic
+latency acceptance occurred in this pass. Decoding remains bounded whole-PCM
+preparation, not unlimited long-form streaming.
 
-## Intentional engine differences
+- Physical acceptance: channel/image/fidelity, natural-end timing, sustained latency,
+  device loss and exclusive compatibility on the target hardware.
+- macOS: earlier hosted ARM64 native-only checks are historical; Mac Unity/player,
+  Intel/universal and physical Core Audio still require qualification.
+- Other Windows release/stripping configurations and arbitrary migrated assets still
+  need qualification; these player passes are not a universal AOT certificate.
+- Older Unity versions and Linux/WebGL direct-device playback are not certified.
 
-Unity editor components/asset GUIDs replace Unreal actors/UObjects/SoundWave paths;
-CSV reference formats are not interchangeable between engines. Editor keys are stable
-across saved-scene reload, live keys are scoped to one play session. Invalid/reserved
-Custom field injection is rejected rather than guessed. Native PCM never uses AudioSource
-as a fallback. OSC, PCM, visual walls and physical renderer acknowledgement remain separate.
+Existing user edits to `ExampleProject/ProjectSettings/InputManager.asset` were
+preserved; no working-project Library/Temp, staged files or commits were required.

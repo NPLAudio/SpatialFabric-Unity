@@ -6,8 +6,15 @@ read-only scene discovery, native PCM playback, loop/replay/state, source-aware 
 CSV, multi-object authoring panels and Top/Front/Side/isometric/history radar.
 
 Opening components/windows/profile data never starts networking, prepares PCM or plays.
+AudioLoom parity adds deterministic random min/max replay, opt-in `playOnStart` (false by
+default; playing-world Start only), derived unique blank OSC bases, duplicate-address
+validation and active-route restart on the main tick. Explicit serialized OSC bases remain
+unchanged. `/ack` and `/state` feedback never receives acknowledgements. New native builds
+also expose optional output mode/OS latency diagnostics; old ABI-v1 plugins remain usable.
+See [PCM / lifecycle](Documentation~/index.md#pcm--lifecycle) for exact policies and limits.
+
 Configure the current Editor/Play context and explicitly Start OSC. Prepare/Play and device
-refresh are explicit. Native output never falls back to Unity AudioSource/mixer. State is
+refresh are explicit unless runtime startup/replay has been opted into. Native output never falls back to Unity AudioSource/mixer. State is
 observed worker lifecycle, not request acceptance or physical audio confirmation.
 
 OSC cue commands reply to the manager's monitor destination (default `127.0.0.1:9001`),
@@ -18,7 +25,7 @@ ack explains startup failure. Playback prepares an assigned PCM asset/loaded cli
 no source/backend/device means failed, never a fabricated playing state. Local or OSC stops
 cancel pending startup feedback. `/status` is address-only and replies with ack plus current
 float `/state`; `/stop` also sends state even when already stopped. Incoming `/ack` and
-`/state` are ignored (with an ignored ack). Unknown suffixes and inapplicable commands
+`/state` are discarded without a reply to prevent reflected feedback loops. Unknown suffixes and inapplicable commands
 (playback gain/live loop) are rejected. Loop nonnumeric payloads are ignored; live gain
 must be numeric 0..4. Float arguments take precedence over integers. Golden ack packets
 and decisions are vendored in `Tests/EditMode/Fixtures/ack-v1.json`; silent regression tests

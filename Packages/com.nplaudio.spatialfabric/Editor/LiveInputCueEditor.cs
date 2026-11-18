@@ -34,7 +34,8 @@ namespace NPLAudio.SpatialFabric.Editor
             EditorGUILayout.LabelField("Worker",$"{cue.WorkerState} / {cue.EndReason}");
             EditorGUILayout.LabelField("Actual input",$"{cue.ActualInputChannels} ch / {cue.ActualInputRate} Hz");
             EditorGUILayout.LabelField("Actual output",$"{cue.ActualOutputChannels} ch / {cue.ActualOutputRate} Hz");
-            EditorGUILayout.LabelField("Live / latency / underruns / overruns",$"{cue.IsLive} / {cue.LatencyMilliseconds:0} ms / {cue.Underruns} / {cue.Overruns}");
+            EditorGUILayout.LabelField("Output mode / OS output latency",$"{cue.OutputMode} / "+(cue.OutputLatencyMilliseconds<0?"unavailable":cue.OutputLatencyMilliseconds.ToString("F2")+" ms (not acoustic)"));
+            EditorGUILayout.LabelField("Live / queue latency / underruns / overruns",$"{cue.IsLive} / {cue.LatencyMilliseconds:0} ms / {cue.Underruns} / {cue.Overruns}");
             var meter=EditorGUILayout.GetControlRect(false,EditorGUIUtility.singleLineHeight);EditorGUI.ProgressBar(meter,Mathf.Clamp01(cue.InputPeak),"Input peak (observed)");
             if(!string.IsNullOrEmpty(cue.LastError))EditorGUILayout.HelpBox(cue.LastError,MessageType.Warning);
             using(new EditorGUILayout.HorizontalScope())

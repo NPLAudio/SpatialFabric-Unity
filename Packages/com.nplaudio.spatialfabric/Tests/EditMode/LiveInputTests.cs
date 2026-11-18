@@ -25,6 +25,15 @@ namespace NPLAudio.SpatialFabric.Tests
             if(root!=null)Object.DestroyImmediate(root);
             if(scene.IsValid())EditorSceneManager.ClosePreviewScene(scene);
         }
+        [Test] public void OptionalOutputDiagnosticsAreSafeOnIdleLiveSession()
+        {
+            using(var session=NativeLive.Create())
+            {
+                var status=session.Poll();Assert.That(status.State,Is.EqualTo(AudioWorkerState.Stopped));
+                Assert.That(status.OutputLatencyMilliseconds,Is.EqualTo(-1));
+                Assert.That(status.OutputMode,Is.EqualTo(AudioOutputMode.Unavailable).Or.EqualTo(AudioOutputMode.Inactive));
+            }
+        }
         [Test] public void ExplicitInputRefreshParsesInventoryWithoutOpeningAnyStream()
         {
             var inputs=NativeLive.RefreshInputs();Assert.That(NativeLive.InputEnumerationError,Is.Empty);

@@ -5,7 +5,7 @@
 Tools → SpatialFabric → Open Window: Stage, Objects, Outputs, Playback, CSV, Diagnostics.
 Create an authored stage/manager, bind selected scene objects, or assign an explicit pose
 transform/label. Bulk sequential IDs/mute and multi-object inspectors are Undoable; prefab
-instance property changes are recorded. No startup network/audio action.
+instance property changes are recorded. No default startup network/audio action; cue runtime startup is explicit opt-in.
 
 A nonempty Outputs array replaces legacy endpoints. Each stable output key defines
 ADM/Custom, IP/port, rate/change policy and coordinate/template configuration. Per-binding
@@ -38,6 +38,38 @@ loaded Decompress On Load clip capture, corresponding/selected channels, linear 
 conversion, native loop/EOF/drain, observed start/end counters and unscaled cancellable
 natural-end replay. Stop/disable cancels pending replay. Failed configured devices never
 become default or emit false Playing. Explicit refresh enumerates devices; queries do not.
+
+AudioLoom parity controls:
+- `playOnStart` defaults false. Opt-in runs once at Unity `Start`, only for a playing-world
+  object (including initially disabled objects when first enabled). Re-enabling does not
+  replay Start. Editor/prefab/discovery/import paths never trigger this option.
+- Fixed replay remains the default. `randomReplayDelay` chooses between sanitized
+  `replayDelayMin`/`replayDelayMax` once per eligible observed natural end. Nonfinite or
+  negative values become zero; reversed bounds swap. A per-cue xorshift32 sequence seeded
+  by `replayRandomSeed` (zero maps to one) resets on enable; no global Unity random state.
+  Stop, disable, loop and autoReplay-off cancel pending replay. Failed/cancelled ends do not draw.
+- Blank `oscBase` derives `/unity/playback/<SHA256>` from the scene instance and hierarchy
+  sibling indices. Cloned objects and repeated additive scenes are distinct. Derived addresses
+  can change on reload/reorder/reparent: use an explicit base for stable show-control profiles.
+  Existing serialized overrides (including `/unity/playback/cue`) are never rewritten.
+  Inspectors/discovery show the resolved base. Manager validation warns about duplicate
+  playback/live-input overrides, including disabled cues; intentional shared bases still fan out.
+- Device/channel/exclusive/buffer edits restart an active Starting/Playing/Draining cue from
+  the beginning on its next main-thread tick. Idle/failed/stopped cues do not autoplay.
+  CSV import remains stopped-only; v1/v2 CSV does not carry startup/random fields and leaves
+  those existing serialized settings unchanged. Blank OSC overrides round-trip as derived mode.
+- Engine-only `/ack` and `/state` feedback is discarded before cue dispatch on either input
+  port, including nested bases; no feedback acknowledgements are generated. Numeric play/loop
+  float-precedence and threshold behavior is unchanged.
+- With the additive native diagnostics exports, inspectors/discovery expose cached output mode
+  (including Windows same-endpoint SharedFallback) and OS output-path latency in milliseconds.
+  Older ABI-v1 plugins remain usable and report diagnostics unavailable (`-1` latency).
+  OS latency excludes application queues and is not measured acoustic/round-trip latency;
+  buffer frames/rate is a different metric. No diagnostic getter opens a device.
+
+Updated native Windows builds retry exclusive negotiation/initialization failures in shared
+mode on the same endpoint; missing devices never fall back to the default endpoint. macOS
+retains strict exclusive hog-mode behavior. Native/platform and physical acceptance are separate.
 
 Channel 0 maps corresponding source/device channels; 1..N maps source channel 0 to one
 physical output. Requested settings and cached actual worker/format state remain distinct.

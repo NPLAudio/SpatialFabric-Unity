@@ -8,6 +8,7 @@ namespace NPLAudio.SpatialFabric.Audio
 {
     [Serializable] public sealed class AudioDeviceInfo { public string id,name; public int channels,sample_rate; public bool is_default; }
     [Serializable] sealed class DeviceInventory { public AudioDeviceInfo[] devices; }
+    public enum AudioOutputMode { Unavailable=-1, Inactive=0, Shared=1, Exclusive=2, SharedFallback=3 }
     public readonly struct AudioStatus
     {
         public readonly AudioWorkerState State;
@@ -16,9 +17,12 @@ namespace NPLAudio.SpatialFabric.Audio
         public readonly bool ExclusiveActive;
         public readonly ulong StartedSequence,EndedSequence,RenderedFrames;
         public readonly string Error;
-        internal AudioStatus(NativeAudio.Status s)
+        public readonly AudioOutputMode OutputMode;
+        public readonly double OutputLatencyMilliseconds;
+        internal AudioStatus(NativeAudio.Status s,AudioOutputMode mode=AudioOutputMode.Unavailable,double latency=-1)
         {
             State=(AudioWorkerState)s.state;Reason=(AudioEndReason)s.reason;OutputChannels=s.channels;OutputRate=s.rate;BufferFrames=s.frames;ExclusiveActive=s.exclusive!=0;
+            OutputMode=mode;OutputLatencyMilliseconds=double.IsNaN(latency) || double.IsInfinity(latency) || latency<0?-1:latency;
             StartedSequence=s.started;EndedSequence=s.ended;RenderedFrames=s.rendered;
             int end=s.error==null?0:Array.IndexOf(s.error,(byte)0);Error=s.error==null?"":Encoding.UTF8.GetString(s.error,0,end<0?s.error.Length:end);
         }
@@ -45,6 +49,8 @@ namespace NPLAudio.SpatialFabric.Audio
         [DllImport(Library,CallingConvention=CallingConvention.Cdecl)] static extern int sf_player_start(IntPtr player,IntPtr buffer,[In] byte[] deviceId,int selected,int exclusive,int bufferMs,int loop);
         [DllImport(Library,CallingConvention=CallingConvention.Cdecl)] static extern void sf_player_loop(IntPtr player,int loop);
         [DllImport(Library,CallingConvention=CallingConvention.Cdecl)] static extern void sf_player_status(IntPtr player,out Status status);
+        [DllImport(Library,CallingConvention=CallingConvention.Cdecl)] static extern int sf_player_output_mode(IntPtr player);
+        [DllImport(Library,CallingConvention=CallingConvention.Cdecl)] static extern double sf_player_output_latency_ms(IntPtr player);
         [DllImport(Library,CallingConvention=CallingConvention.Cdecl)] static extern void sf_player_stop(IntPtr player);
         [DllImport(Library,CallingConvention=CallingConvention.Cdecl)] static extern void sf_player_destroy(IntPtr player);
         static T WithHandle<T>(SafeHandle handle,Func<IntPtr,T> action)
@@ -84,7 +90,15 @@ namespace NPLAudio.SpatialFabric.Audio
         {
             internal Player(IntPtr value):base(true) {SetHandle(value);}
             protected override bool ReleaseHandle() {sf_player_destroy(handle);return true;}
-            public AudioStatus Poll() => WithHandle(this,h=>{sf_player_status(h,out var status);return new AudioStatus(status);});
+            bool hasMode=true,hasLatency=true;
+            public AudioStatus Poll() => WithHandle(this,h=>
+            {
+                sf_player_status(h,out var status);var mode=AudioOutputMode.Unavailable;double latency=-1;
+                // Additive exports are optional: older ABI-v1 plugins continue working unchanged.
+                if(hasMode)try{mode=(AudioOutputMode)sf_player_output_mode(h);}catch(EntryPointNotFoundException){hasMode=false;}
+                if(hasLatency)try{latency=sf_player_output_latency_ms(h);}catch(EntryPointNotFoundException){hasLatency=false;}
+                return new AudioStatus(status,mode,latency);
+            });
             public void Stop() {WithHandle(this,h=>{sf_player_stop(h);return 0;});}
             public void SetLoop(bool loop) {WithHandle(this,h=>{sf_player_loop(h,loop?1:0);return 0;});}
             public bool Start(Buffer buffer,string deviceId,int selected,bool exclusive,int bufferMs,bool loop)

@@ -19,7 +19,8 @@ byte[] Bundle(params byte[][] packets)
     foreach (var p in packets) { var size = BitConverter.GetBytes(p.Length); if (BitConverter.IsLittleEndian) Array.Reverse(size); list.AddRange(size); list.AddRange(p); }
     return list.ToArray();
 }
-using var fixtures = JsonDocument.Parse(File.ReadAllText(args.Length > 0 ? args[0] : "../SpatialFabric-Interop/Fixtures/osc-v1.json"));
+string fixturePath=args.Length > 0 ? args[0] : "Packages/com.nplaudio.spatialfabric/Tests/EditMode/Fixtures/osc-v1.json";
+using var fixtures = JsonDocument.Parse(File.ReadAllText(fixturePath));
 foreach (var v in fixtures.RootElement.GetProperty("valid").EnumerateArray())
 {
     string name = v.GetProperty("name").GetString(),hex = v.GetProperty("hex").GetString();
@@ -82,11 +83,19 @@ Check("WAV rejects unknown extensible GUID",()=> {var b=Wav(1,32,1,48000,new byt
 Check("WAV rejects invalid extension length",()=> {var b=Wav(1,32,1,48000,new byte[4],true);b[36]=255;Reject(()=>WavDecoder.Decode(b));});
 Check("observed starts are not request acknowledgements",()=> {var o=new PlaybackObservation();var events=new List<bool>();o.StateChanged+=events.Add;o.Observe(AudioWorkerState.Starting,AudioEndReason.None,0,0,true,true,false,1,0);o.Observe(AudioWorkerState.Failed,AudioEndReason.DeviceError,0,0,true,true,false,1,1);Assert(events.Count==0 && !o.IsPlaying && !o.ReplayPending);});
 Check("short-clip observed start and end survive one poll",()=> {var o=new PlaybackObservation();var events=new List<bool>();o.StateChanged+=events.Add;o.Observe(AudioWorkerState.Stopped,AudioEndReason.NaturalEnd,1,1,true,true,false,2,10);Assert(events.SequenceEqual(new[]{true,false}) && o.ReplayPending && !o.IsPlaying);Assert(!o.TakeReplay(11.9) && o.TakeReplay(12) && !o.TakeReplay(13));});
+Check("stop from EOF callback cannot rearm replay",()=> {var o=new PlaybackObservation();o.StateChanged+=playing=>{if(!playing)o.CancelReplay();};o.Observe(AudioWorkerState.Stopped,AudioEndReason.NaturalEnd,1,1,true,true,false,0,0);Assert(!o.ReplayPending && !o.TakeReplay(100));});
+Check("failure cancels an already queued natural replay",()=> {var o=new PlaybackObservation();o.Observe(AudioWorkerState.Stopped,AudioEndReason.NaturalEnd,1,1,true,true,false,10,0);o.Observe(AudioWorkerState.Failed,AudioEndReason.DeviceError,1,1,true,true,false,0,1);Assert(!o.ReplayPending);});
 Check("manual stop cancels queued replay",()=> {var o=new PlaybackObservation();o.Observe(AudioWorkerState.Stopped,AudioEndReason.NaturalEnd,1,1,true,true,false,1,0);o.CancelReplay();Assert(!o.TakeReplay(100));});
 Check("loop or replay policy changes cancel queued replay",()=> {foreach(bool loop in new[]{false,true}){var o=new PlaybackObservation();o.Observe(AudioWorkerState.Stopped,AudioEndReason.NaturalEnd,1,1,true,true,false,1,0);o.ApplyReplayPolicy(loop,loop);Assert(!o.TakeReplay(100));}});
 Check("worker failure never schedules replay",()=> {var o=new PlaybackObservation();o.Observe(AudioWorkerState.Failed,AudioEndReason.DeviceError,1,1,true,true,false,0,1);Assert(!o.ReplayPending);});
 Check("repeated ended snapshots do not postpone replay",()=> {var o=new PlaybackObservation();o.Observe(AudioWorkerState.Stopped,AudioEndReason.NaturalEnd,1,1,true,true,false,2,0);o.Observe(AudioWorkerState.Stopped,AudioEndReason.NaturalEnd,1,1,true,true,false,2,1);Assert(o.TakeReplay(2));});
-using(var customFixture=JsonDocument.Parse(File.ReadAllText(Path.Combine(Path.GetDirectoryName(args[0]),"custom-v1.json"))))
+Check("portable random known xorshift32 sequence",()=> {uint state=1;foreach(uint expected in new uint[]{270369,67634689,2647435461}){double delay=PlaybackPolicy.ReplayDelay(true,99,0,1,ref state);Assert(state==expected && delay==expected/4294967295.0);}});
+Check("random bounds reverse sanitize and fixed path does not draw",()=> {uint state=0;Assert(PlaybackPolicy.ReplayDelay(false,-1,0,1,ref state)==0 && state==0);Assert(PlaybackPolicy.ReplayDelay(false,double.NaN,0,1,ref state)==0);for(int i=0;i<1000;++i){double value=PlaybackPolicy.ReplayDelay(true,99,5,2,ref state);Assert(value>=2 && value<=5);}Assert(PlaybackPolicy.ReplayDelay(true,99,double.NaN,double.PositiveInfinity,ref state)==0);Assert(PlaybackPolicy.ReplayDelay(true,99,-5,-1,ref state)==0);Assert(PlaybackPolicy.ReplayDelay(true,99,3,3,ref state)==3);});
+Check("delay drawn once per eligible end only",()=> {var o=new PlaybackObservation();int draws=0;double Draw(){++draws;return 2;}o.Observe(AudioWorkerState.Playing,AudioEndReason.None,1,0,true,true,false,0,0,Draw);o.Observe(AudioWorkerState.Stopped,AudioEndReason.NaturalEnd,1,1,true,true,false,0,10,Draw);o.Observe(AudioWorkerState.Stopped,AudioEndReason.NaturalEnd,1,1,true,true,false,0,11,Draw);Assert(draws==1 && !o.TakeReplay(11.99) && o.TakeReplay(12));foreach(var reason in new[]{AudioEndReason.Cancelled,AudioEndReason.DeviceError})o.Observe(AudioWorkerState.Failed,reason,2,2,true,true,false,0,20,Draw);o.Observe(AudioWorkerState.Stopped,AudioEndReason.NaturalEnd,3,3,false,true,false,0,20,Draw);o.Observe(AudioWorkerState.Stopped,AudioEndReason.NaturalEnd,4,4,true,true,true,0,20,Draw);Assert(draws==1);});
+Check("route restart active only",()=> {foreach(AudioWorkerState state in Enum.GetValues<AudioWorkerState>()){Assert(!PlaybackPolicy.RestartRoute(false,state));Assert(PlaybackPolicy.RestartRoute(true,state)==(state==AudioWorkerState.Starting || state==AudioWorkerState.Playing || state==AudioWorkerState.Draining));}});
+Check("derived OSC bases deterministic valid and disambiguated",()=> {string a=PlaybackPolicy.DerivedBase("scene","/0/1");Assert(a==PlaybackPolicy.DerivedBase("scene","/0/1") && OscCodec.ValidAddress(a));Assert(a!=PlaybackPolicy.DerivedBase("scene","/0/2") && a!=PlaybackPolicy.DerivedBase("other","/0/1"));});
+Check("feedback suppressed without changing numeric command contract",()=> {Assert(PlaybackControl.IsFeedback("ack") && PlaybackControl.IsFeedback("state"));Assert(PlaybackControl.IsFeedbackAddress("/parent/child/state") && PlaybackControl.IsFeedbackAddress("/parent/child/ack") && !PlaybackControl.IsFeedbackAddress("/parent/state/play"));foreach(string command in new[]{"play","stop","loop","status","gain","ack/extra","State"})Assert(!PlaybackControl.IsFeedback(command));Assert(PlaybackControl.Play(new OscMessage("/play",OscArg.Int(0)))==false);Assert(PlaybackControl.Play(new OscMessage("/play",OscArg.Int(1),OscArg.Float(.5f))));});
+using(var customFixture=JsonDocument.Parse(File.ReadAllText(Path.Combine(Path.GetDirectoryName(fixturePath),"custom-v1.json"))))
 foreach(var row in customFixture.RootElement.GetProperty("vectors").EnumerateArray())
 {
     Check("Custom golden "+row.GetProperty("name").GetString(),()=>
@@ -128,7 +137,7 @@ Check("AudioLoom play/loop half-threshold distinction",()=>{var m=new OscMessage
 Check("AudioLoom float precedence across mixed args",()=>{var m=new OscMessage("/cue",OscArg.Int(1),OscArg.String("metadata"),OscArg.Float(0));Assert(!PlaybackControl.Play(m) && !PlaybackControl.Loop(m));});
 Check("AudioLoom address-only play but loop off",()=>{var m=new OscMessage("/cue");Assert(PlaybackControl.Play(m) && !PlaybackControl.Loop(m));});
 Check("AudioLoom unknown nonnumeric payload never plays",()=>{var m=new OscMessage("/cue",OscArg.String("1"),new OscArg('T',true));Assert(!PlaybackControl.Play(m) && !PlaybackControl.Loop(m));});
-using(var ackFixture=JsonDocument.Parse(File.ReadAllText(Path.Combine(Path.GetDirectoryName(args[0]),"ack-v1.json"))))
+using(var ackFixture=JsonDocument.Parse(File.ReadAllText(Path.Combine(Path.GetDirectoryName(fixturePath),"ack-v1.json"))))
 {
     foreach(var row in ackFixture.RootElement.GetProperty("vectors").EnumerateArray())
         Check("ack golden "+row.GetProperty("name").GetString(),()=>
@@ -242,7 +251,7 @@ Check("context exact 4-object document",()=>
 });
 Check("context empty document is valid JSON",()=>Assert(JsonDocument.Parse(NPLAudio.SpatialFabric.Editor.ContextExportCore.Build("",new NPLAudio.SpatialFabric.Editor.ContextEntry[0]).Json).RootElement.GetProperty("objects").GetArrayLength()==0));
 // ---- Path v1 (baked path playback) ----
-string pathFixturePath=Path.Combine(Path.GetDirectoryName(Path.GetFullPath(args.Length > 0 ? args[0] : "../SpatialFabric-Interop/Fixtures/osc-v1.json"))??".","path-v1.json");
+string pathFixturePath=Path.Combine(Path.GetDirectoryName(Path.GetFullPath(fixturePath))??".","path-v1.json");
 using var pathFixture=JsonDocument.Parse(File.ReadAllText(pathFixturePath));
 double pathTol=pathFixture.RootElement.GetProperty("tolerance").GetDouble();
 foreach(var c in pathFixture.RootElement.GetProperty("cases").EnumerateArray())

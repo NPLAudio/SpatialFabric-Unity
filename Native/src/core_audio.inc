@@ -35,6 +35,26 @@ std::string devices(bool capture=false) {
         if(!first)result+=',';first=false;result+="{\"id\":"+json_string(ca_string(device,kAudioDevicePropertyDeviceUID))+",\"name\":"+json_string(ca_string(device,kAudioObjectPropertyName))+",\"channels\":"+std::to_string(channels)+",\"sample_rate\":"+std::to_string(int(rate))+",\"is_default\":"+(device==def?"true":"false")+"}";
     }return result+"]}";
 }
+// HAL-reported output path, not an estimate derived from our three AudioQueue
+// buffers. Multistream devices report the slowest stream. Missing properties
+// leave latency unavailable rather than fabricating a buffer-only OS latency.
+double ca_output_latency(AudioDeviceID device,double rate) noexcept {
+    try {
+        const auto scope=kAudioDevicePropertyScopeOutput;
+        uint64_t frames=ca_value<UInt32>(device,kAudioDevicePropertyLatency,scope);
+        frames+=ca_value<UInt32>(device,kAudioDevicePropertySafetyOffset,scope);
+        frames+=ca_value<UInt32>(device,kAudioDevicePropertyBufferFrameSize);
+        auto address=ca_address(kAudioDevicePropertyStreams,scope);UInt32 bytes=0;
+        ca_check(AudioObjectGetPropertyDataSize(device,&address,0,nullptr,&bytes),"Output stream list size");
+        if(!bytes || bytes>256*sizeof(AudioStreamID) || bytes%sizeof(AudioStreamID))return -1;
+        std::vector<AudioStreamID> streams(bytes/sizeof(AudioStreamID));const UInt32 capacity=bytes;
+        ca_check(AudioObjectGetPropertyData(device,&address,0,nullptr,&bytes,streams.data()),"Output stream list");
+        if(!bytes || bytes>capacity || bytes%sizeof(AudioStreamID))return -1;
+        UInt32 slowest=0;for(size_t i=0;i<bytes/sizeof(AudioStreamID);++i)
+            slowest=std::max(slowest,ca_value<UInt32>(streams[i],kAudioStreamPropertyLatency));
+        return double(frames+slowest)*1000.0/rate;
+    }catch(...){return -1;}
+}
 struct CaHog {
     AudioDeviceID device;bool acquired=false;
     CaHog(AudioDeviceID id,bool requested):device(id) {
@@ -81,8 +101,9 @@ int run_device(sf_player* p,std::shared_ptr<const sf::Pcm> pcm,const std::string
     AudioChannelLayout layout{};layout.mChannelLayoutTag=kAudioChannelLayoutTag_DiscreteInOrder|UInt32(channels);ca_check(AudioQueueSetProperty(queue.value,kAudioQueueProperty_ChannelLayout,&layout,offsetof(AudioChannelLayout,mChannelDescriptions)),"Set discrete output channel order");
     for(int i=0;i<3;++i){AudioQueueBufferRef buffer=nullptr;ca_check(AudioQueueAllocateBuffer(queue.value,UInt32(render.frames*channels*sizeof(float)),&buffer),"Allocate Core Audio buffer");if(!render.fill(queue.value,buffer))break;}
     if(p->stop)throw Cancelled{};if(render.failed)throw std::runtime_error("Core Audio initial PCM submission failed");
+    const double latency=ca_output_latency(device,nominal);
     ca_check(AudioQueueStart(queue.value,nullptr),"Start Core Audio output");started=true;
-    {std::lock_guard<std::mutex> lock(p->status_lock);p->status.state=SF_PLAYING;++p->status.started_sequence;p->status.output_channels=channels;p->status.output_rate=rate;p->status.exclusive_active=exclusive?1:0;p->status.buffer_frames=render.frames*3;}
+    {std::lock_guard<std::mutex> lock(p->status_lock);p->status.state=SF_PLAYING;++p->status.started_sequence;p->status.output_channels=channels;p->status.output_rate=rate;p->status.exclusive_active=exclusive?1:0;p->status.buffer_frames=render.frames*3;p->output_latency_ms=latency;p->output_mode=exclusive?SF_OUTPUT_EXCLUSIVE:SF_OUTPUT_SHARED;}
     auto progress=std::chrono::steady_clock::now();uint64_t lastReturned=render.returned;
     while(render.pending>0){if(p->stop)throw Cancelled{};if(render.failed)throw std::runtime_error("Core Audio callback submission failed: "+std::to_string(render.error.load()));if(!ca_value<UInt32>(device,kAudioDevicePropertyDeviceIsAlive))throw std::runtime_error("Core Audio output device lost");
         if(render.eof){std::lock_guard<std::mutex> lock(p->status_lock);p->status.state=SF_DRAINING;}
@@ -138,8 +159,9 @@ int run_live(sf_live* p,const std::string& in_id,int in_sel,const std::string& o
     AudioChannelLayout layout{};layout.mChannelLayoutTag=kAudioChannelLayoutTag_DiscreteInOrder|UInt32(out_ch);ca_check(AudioQueueSetProperty(out_queue.value,kAudioQueueProperty_ChannelLayout,&layout,offsetof(AudioChannelLayout,mChannelDescriptions)),"Set discrete output channel order");
     for(int i=0;i<3;++i){AudioQueueBufferRef buffer=nullptr;ca_check(AudioQueueAllocateBuffer(out_queue.value,UInt32(out_frames*out_ch*sizeof(float)),&buffer),"Allocate Core Audio output buffer");if(!state.fill_out(out_queue.value,buffer))break;}
     if(p->stop)throw Cancelled{};if(state.failed)throw std::runtime_error("Core Audio initial live submission failed");
+    const double latency=ca_output_latency(out,out_nominal);
     ca_check(AudioQueueStart(in_queue.value,nullptr),"Start Core Audio input");ca_check(AudioQueueStart(out_queue.value,nullptr),"Start Core Audio output");started=true;
-    {std::lock_guard<std::mutex> lock(p->status_lock);p->status.state=SF_PLAYING;++p->status.started_sequence;p->status.input_channels=in_ch;p->status.input_rate=in_rate;p->status.output_channels=out_ch;p->status.output_rate=out_rate;p->status.exclusive_active=exclusive?1:0;p->status.buffer_frames=out_frames*3;}
+    {std::lock_guard<std::mutex> lock(p->status_lock);p->status.state=SF_PLAYING;++p->status.started_sequence;p->status.input_channels=in_ch;p->status.input_rate=in_rate;p->status.output_channels=out_ch;p->status.output_rate=out_rate;p->status.exclusive_active=exclusive?1:0;p->status.buffer_frames=out_frames*3;p->output_latency_ms=latency;p->output_mode=exclusive?SF_OUTPUT_EXCLUSIVE:SF_OUTPUT_SHARED;}
     auto last_input=std::chrono::steady_clock::now();uint64_t last_captured=0;
     for(;;) {
         if(p->stop)throw Cancelled{};

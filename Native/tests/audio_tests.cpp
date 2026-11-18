@@ -28,13 +28,18 @@ int run() {
     auto b=sf_buffer_create(source,4,2,48000,error,1024);check(b!=nullptr);source[0]=1;p=0;check(sf_buffer_render(b,out,1,2,48000,0,0,&p)==0 && out[0]==.25f); // Immutable copy.
     check(sf_buffer_render(b,out,1,2,48000,99,0,&p)==-1);
     check(sf_audio_abi_version()==1);
+    check(sf_player_output_latency_ms(nullptr)==-1 && sf_player_output_mode(nullptr)==SF_OUTPUT_INACTIVE);
+    check(sf_live_output_latency_ms(nullptr)==-1 && sf_live_output_mode(nullptr)==SF_OUTPUT_INACTIVE);
     auto player=sf_player_create();check(player!=nullptr);sf_status status{};sf_player_status(player,&status);check(status.state==SF_STOPPED && status.started_sequence==0);
-    check(sf_player_start(player,b,"spatialfabric-intentionally-invalid-device-id-no-fallback",0,0,0,0)==1);
+    check(sf_player_output_latency_ms(player)==-1 && sf_player_output_mode(player)==SF_OUTPUT_INACTIVE);
+    check(sf_player_start(player,b,"spatialfabric-intentionally-invalid-device-id-no-fallback",0,1,0,0)==1);
     sf_buffer_destroy(b); // Worker must retain immutable PCM independently of caller handle.
     auto deadline=std::chrono::steady_clock::now()+std::chrono::seconds(5);
     do {std::this_thread::sleep_for(std::chrono::milliseconds(5));sf_player_status(player,&status);}while(status.state==SF_STARTING && std::chrono::steady_clock::now()<deadline);
     check(status.state==SF_FAILED && status.reason==SF_DEVICE_ERROR && status.started_sequence==0 && status.ended_sequence==0 && status.error_utf8[0]);
+    check(sf_player_output_latency_ms(player)==-1 && sf_player_output_mode(player)==SF_OUTPUT_INACTIVE);
     sf_player_stop(player);sf_player_status(player,&status);check(status.state==SF_STOPPED && status.reason==SF_CANCELLED);
+    check(sf_player_output_latency_ms(player)==-1 && sf_player_output_mode(player)==SF_OUTPUT_INACTIVE);
     sf_player_destroy(player);
     // Repeated cancellation/lifetime stress, still only an invalid device ID.
     float mono[]={.1f};b=sf_buffer_create(mono,1,1,48000,error,1024);
@@ -67,10 +72,12 @@ int run() {
 #endif
         check(sf_live_abi_version()==1);
         auto live=sf_live_create();check(live!=nullptr);sf_live_status ls{};sf_live_status_get(live,&ls);check(ls.state==SF_STOPPED && ls.started_sequence==0);
-        check(sf_live_start(live,"spatialfabric-invalid-input-no-fallback",0,"spatialfabric-invalid-output-no-fallback",0,0,0,1.f)==1);
+        check(sf_live_output_latency_ms(live)==-1 && sf_live_output_mode(live)==SF_OUTPUT_INACTIVE);
+        check(sf_live_start(live,"spatialfabric-invalid-input-no-fallback",0,"spatialfabric-invalid-output-no-fallback",0,1,0,1.f)==1);
         auto live_deadline=std::chrono::steady_clock::now()+std::chrono::seconds(5);
         do {std::this_thread::sleep_for(std::chrono::milliseconds(5));sf_live_status_get(live,&ls);}while(ls.state==SF_STARTING && std::chrono::steady_clock::now()<live_deadline);
         check(ls.state==SF_FAILED && ls.reason==SF_DEVICE_ERROR && ls.started_sequence==0 && ls.captured_frames==0 && ls.error_utf8[0]);
+        check(sf_live_output_latency_ms(live)==-1 && sf_live_output_mode(live)==SF_OUTPUT_INACTIVE);
         check(sf_live_start(live,nullptr,65,nullptr,0,0,0,1.f)==0 && sf_live_start(live,nullptr,0,nullptr,0,0,0,std::numeric_limits<float>::quiet_NaN())==0 && sf_live_start(live,nullptr,0,nullptr,0,0,0,5.f)==0);
         sf_live_stop(live);sf_live_status_get(live,&ls);check(ls.state==SF_STOPPED && ls.reason==SF_CANCELLED);sf_live_destroy(live);
         for(int i=0;i<50;++i){live=sf_live_create();sf_live_start(live,"spatialfabric-invalid-input",0,"spatialfabric-invalid-output",0,0,0,1.f);sf_live_stop(live);sf_live_destroy(live);}

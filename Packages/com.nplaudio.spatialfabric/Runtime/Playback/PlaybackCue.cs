@@ -17,13 +17,29 @@ namespace NPLAudio.SpatialFabric
         public PreparedAudioAsset preparedAudio;
         [Tooltip("Optional Unity clip source; requires Decompress On Load and already-loaded samples. No AudioSource is created.")]
         public AudioClip clip;
-        public string oscBase = "/unity/playback/cue";
+        [Tooltip("Blank derives a unique hierarchy address. Existing serialized overrides are retained.")]
+        public string oscBase = "";
+        public string EffectiveOscBase
+        {
+            get
+            {
+                if(!string.IsNullOrWhiteSpace(oscBase))return oscBase;
+                string indices="";for(var t=transform;t!=null;t=t.parent)indices="/"+t.GetSiblingIndex()+indices;
+                var scene=gameObject.scene;
+                return PlaybackPolicy.DerivedBase(scene.path+"#instance:"+scene.handle,indices);
+            }
+        }
         public string configuredDeviceId = "";
         [Min(0)] public int outputChannel;
         public bool exclusiveRequested;
         [Range(0,2000)] public int bufferMsRequested;
         public bool loop, autoReplay;
+        [Tooltip("Opt-in once at runtime Start only; never in editor, discovery or import.")]
+        public bool playOnStart;
         [Min(0)] public float replayDelaySeconds = 1;
+        public bool randomReplayDelay;
+        [Min(0)] public float replayDelayMin = 1, replayDelayMax = 1;
+        public uint replayRandomSeed = 1;
         public string LastError { get; private set; } = "";
         public bool BackendAvailable => NativeAudio.IsAvailable;
         public bool IsPrepared => buffer != null && !buffer.IsClosed && !buffer.IsInvalid && (preparedAudio!=null || clip!=null) && cachedAsset==preparedAudio && cachedClip==clip && (preparedAudio==null || cachedRevision==preparedAudio.Revision);
@@ -35,7 +51,10 @@ namespace NPLAudio.SpatialFabric
         public int ActualOutputRate { get; private set; }
         public int ActualBufferFrames { get; private set; }
         public bool ExclusiveActive { get; private set; }
-        public bool ValidBase => OscCodec.ValidAddress(oscBase);
+        public AudioOutputMode OutputMode { get; private set; } = AudioOutputMode.Unavailable;
+        // Cached OS output-path latency, not measured acoustic/round-trip latency. -1 = unavailable.
+        public double OutputLatencyMilliseconds { get; private set; } = -1;
+        public bool ValidBase => OscCodec.ValidAddress(EffectiveOscBase);
         // Changes whenever a local or OSC action cancels/replaces a start request.
         internal uint AudioRequestVersion { get; private set; }
         NativeAudio.Buffer buffer;
@@ -45,7 +64,15 @@ namespace NPLAudio.SpatialFabric
         string cachedRevision;
         readonly PlaybackObservation observation = new PlaybackObservation();
         double nextPoll;
-        void OnEnable() {observation.StateChanged += OnObservedState;}
+        uint replayRandomState;
+        string startedDevice;
+        int startedChannel,startedBuffer;
+        bool startedExclusive;
+        bool SourceChanged => cachedAsset!=preparedAudio || cachedClip!=clip || preparedAudio!=null && cachedRevision!=preparedAudio.Revision;
+        bool RouteChanged => startedDevice!=(configuredDeviceId??"") || startedChannel!=outputChannel || startedBuffer!=bufferMsRequested || startedExclusive!=exclusiveRequested || SourceChanged;
+        void OnEnable() {observation.StateChanged += OnObservedState;replayRandomState=replayRandomSeed;}
+        void Start() {if(Application.IsPlaying(gameObject) && playOnStart)TryPlay();}
+        double SelectReplayDelay() => PlaybackPolicy.ReplayDelay(randomReplayDelay,replayDelaySeconds,replayDelayMin,replayDelayMax,ref replayRandomState);
         void OnObservedState(bool playing) {PlaybackEvents.Emit(this,playing);}
         static double Clock => Time.realtimeSinceStartupAsDouble;
         public bool Prepare()
@@ -81,6 +108,7 @@ namespace NPLAudio.SpatialFabric
             {
                 if(player==null || player.IsClosed) {player=NativeAudio.CreatePlayer();observation.Reset();}
                 if(!player.Start(buffer,configuredDeviceId,outputChannel,exclusiveRequested,bufferMsRequested,loop)) {Observe(Clock,false);return false;}
+                startedDevice=configuredDeviceId??"";startedChannel=outputChannel;startedBuffer=bufferMsRequested;startedExclusive=exclusiveRequested;
                 WorkerState=AudioWorkerState.Starting;EndReason=AudioEndReason.None;LastError="";nextPoll=0;return true; // Request accepted, not Playing acknowledgement.
             }
             catch(Exception e) when(e is ArgumentException || e is InvalidOperationException) {LastError=e.Message;return false;}
@@ -94,17 +122,20 @@ namespace NPLAudio.SpatialFabric
         public void SetLoop(bool value) {loop=value;if(value)observation.CancelReplay();if(player!=null && !player.IsClosed)player.SetLoop(value);}
         public void Tick(double now)
         {
-            if(!isActiveAndEnabled)return;
+            if(!SceneInventory.IsMainThread || !isActiveAndEnabled)return;
             if(player!=null && !player.IsClosed && now>=nextPoll) {nextPoll=now+1.0/60;player.SetLoop(loop);Observe(now,true);}
+            // Authoring/Undo/scripts only change fields; all native restart work stays on this tick.
+            if(player!=null && !player.IsClosed && PlaybackPolicy.RestartRoute(RouteChanged,WorkerState)) {TryPlay();return;}
             observation.ApplyReplayPolicy(autoReplay,loop);
             if(observation.TakeReplay(now))TryPlay();
         }
         void Observe(double now,bool allowReplay)
         {
             AudioStatus s=player.Poll();WorkerState=s.State;EndReason=s.Reason;ActualOutputChannels=s.OutputChannels;ActualOutputRate=s.OutputRate;ActualBufferFrames=s.BufferFrames;ExclusiveActive=s.ExclusiveActive;
+            OutputMode=s.OutputMode;OutputLatencyMilliseconds=s.OutputLatencyMilliseconds;
             if(!string.IsNullOrEmpty(s.Error))LastError=s.Error;
             // Sequence counters preserve real starts/ends even when a short clip completes between editor ticks.
-            observation.Observe(s.State,s.Reason,s.StartedSequence,s.EndedSequence,allowReplay,autoReplay,loop,replayDelaySeconds,now);
+            observation.Observe(s.State,s.Reason,s.StartedSequence,s.EndedSequence,allowReplay,autoReplay,loop,replayDelaySeconds,now,SelectReplayDelay);
         }
         void ReleaseBuffer() {buffer?.Dispose();buffer=null;cachedAsset=null;cachedClip=null;cachedRevision=null;}
         public void ReleaseAudio()

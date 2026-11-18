@@ -32,6 +32,8 @@ struct sf_player {
     std::thread worker;
     std::atomic<bool> stop{false}, loop{false};
     sf_status status{};
+    double output_latency_ms=-1;
+    int32_t output_mode=SF_OUTPUT_INACTIVE;
 #ifdef _WIN32
     HANDLE stop_event=CreateEventW(nullptr,TRUE,FALSE,nullptr);
     ~sf_player() { if(stop_event) CloseHandle(stop_event); }
@@ -43,6 +45,8 @@ struct sf_live {
     std::atomic<bool> stop{false};
     std::atomic<float> gain{1.f};
     sf_live_status status{};
+    double output_latency_ms=-1;
+    int32_t output_mode=SF_OUTPUT_INACTIVE;
 #ifdef _WIN32
     HANDLE stop_event=CreateEventW(nullptr,TRUE,FALSE,nullptr);
     ~sf_live() { if(stop_event) CloseHandle(stop_event); }
@@ -121,25 +125,51 @@ std::string devices(bool capture=false) {
     }
     return out+"]}";
 }
+// Negotiate only on the already-resolved endpoint. A failed exclusive Initialize
+// may poison its client, so both alignment retry and shared fallback use fresh clients.
+void initialize_output(IMMDevice* device,ComPtr<IAudioClient>& client,WAVEFORMATEX* format,bool& exclusive,int buffer_ms) {
+    auto activate=[&] {
+        client.Reset();return device->Activate(__uuidof(IAudioClient),CLSCTX_ALL,nullptr,reinterpret_cast<void**>(client.GetAddressOf()));
+    };
+    HRESULT init=E_FAIL;
+    if(exclusive) {
+        init=client->IsFormatSupported(AUDCLNT_SHAREMODE_EXCLUSIVE,format,nullptr);
+        if(init==S_OK) {
+            REFERENCE_TIME period=0,minimum=0;
+            init=client->GetDevicePeriod(&period,&minimum);
+            if(SUCCEEDED(init)) {
+                REFERENCE_TIME duration=buffer_ms>0?REFERENCE_TIME(buffer_ms)*10000:std::max(period,minimum);
+                init=client->Initialize(AUDCLNT_SHAREMODE_EXCLUSIVE,AUDCLNT_STREAMFLAGS_EVENTCALLBACK,duration,duration,format,nullptr);
+                if(init==AUDCLNT_E_BUFFER_SIZE_NOT_ALIGNED) {
+                    UINT32 aligned=0;init=client->GetBufferSize(&aligned);
+                    if(SUCCEEDED(init) && aligned>0 && aligned<=1024*1024) {
+                        duration=REFERENCE_TIME(std::llround(10000000.0*aligned/format->nSamplesPerSec));
+                        init=activate();
+                        if(SUCCEEDED(init))init=client->Initialize(AUDCLNT_SHAREMODE_EXCLUSIVE,AUDCLNT_STREAMFLAGS_EVENTCALLBACK,duration,duration,format,nullptr);
+                    } else init=E_FAIL;
+                }
+            }
+        }
+        if(init==S_OK)return;
+        exclusive=false;check(activate(),"Reactivate output client");
+    }
+    check(client->Initialize(AUDCLNT_SHAREMODE_SHARED,AUDCLNT_STREAMFLAGS_EVENTCALLBACK|AUDCLNT_STREAMFLAGS_NOPERSIST,
+        buffer_ms>0?REFERENCE_TIME(buffer_ms)*10000:0,0,format,nullptr),"Initialize WASAPI shared output stream");
+}
+double output_latency(IAudioClient* client) noexcept {
+    REFERENCE_TIME latency=0;
+    return SUCCEEDED(client->GetStreamLatency(&latency)) && latency>=0?double(latency)/10000.0:-1.0;
+}
 int run_device(sf_player* p,std::shared_ptr<const sf::Pcm> pcm,const std::string& id,int selected,bool exclusive,int buffer_ms,bool& started) {
     ComScope com;ComPtr<IMMDeviceEnumerator> enumerator;check(CoCreateInstance(__uuidof(MMDeviceEnumerator),nullptr,CLSCTX_ALL,IID_PPV_ARGS(&enumerator)),"Create device enumerator");
     ComPtr<IMMDevice> device;if(id.empty())check(enumerator->GetDefaultAudioEndpoint(eRender,eConsole,&device),"Get default output");else {auto w=wide(id.c_str());check(enumerator->GetDevice(w.c_str(),&device),"Get configured output (no default fallback)");}
     ComPtr<IAudioClient> client;check(device->Activate(__uuidof(IAudioClient),CLSCTX_ALL,nullptr,reinterpret_cast<void**>(client.GetAddressOf())),"Activate output client");
     Format mix;check(client->GetMixFormat(&mix.value),"Get output mix format");bool floating=false;int bits=0,valid=0;format_info(mix.value,floating,bits,valid);
     if(selected<0 || selected>mix.value->nChannels)throw std::runtime_error("Selected output channel exceeds actual device channels");
-    AUDCLNT_SHAREMODE mode=exclusive?AUDCLNT_SHAREMODE_EXCLUSIVE:AUDCLNT_SHAREMODE_SHARED;
-    if(exclusive)check(client->IsFormatSupported(mode,mix.value,nullptr),"Exclusive mix format unsupported (no silent shared fallback)");
-    REFERENCE_TIME period=0,minimum=0;check(client->GetDevicePeriod(&period,&minimum),"Get device period");
-    REFERENCE_TIME duration=buffer_ms>0?REFERENCE_TIME(buffer_ms)*10000:(exclusive?std::max(period,minimum):0);
-    DWORD flags=AUDCLNT_STREAMFLAGS_EVENTCALLBACK|(exclusive?0:AUDCLNT_STREAMFLAGS_NOPERSIST);
-    HRESULT init=client->Initialize(mode,flags,duration,exclusive?duration:0,mix.value,nullptr);
-    if(exclusive && init==AUDCLNT_E_BUFFER_SIZE_NOT_ALIGNED) {
-        UINT32 aligned=0;check(client->GetBufferSize(&aligned),"Get exclusive aligned buffer size");
-        duration=REFERENCE_TIME(std::llround(10000000.0*aligned/mix.value->nSamplesPerSec));client.Reset();
-        check(device->Activate(__uuidof(IAudioClient),CLSCTX_ALL,nullptr,reinterpret_cast<void**>(client.GetAddressOf())),"Reactivate aligned output");
-        init=client->Initialize(mode,flags,duration,duration,mix.value,nullptr);
-    }
-    check(init,"Initialize WASAPI stream");Event audio;if(!audio.value)throw std::runtime_error("Create WASAPI event failed");check(client->SetEventHandle(audio.value),"Set audio event");
+    const bool requested_exclusive=exclusive;
+    initialize_output(device.Get(),client,mix.value,exclusive,buffer_ms);
+    const double latency=output_latency(client.Get());
+    Event audio;if(!audio.value)throw std::runtime_error("Create WASAPI event failed");check(client->SetEventHandle(audio.value),"Set audio event");
     UINT32 frames=0;check(client->GetBufferSize(&frames),"Get device buffer size");
     if(frames<1 || frames>1024*1024)throw std::runtime_error("Device buffer size limit exceeded");
     ComPtr<IAudioRenderClient> render;check(client->GetService(IID_PPV_ARGS(&render)),"Get render client");StreamStop stop{client.Get()};
@@ -153,7 +183,7 @@ int run_device(sf_player* p,std::shared_ptr<const sf::Pcm> pcm,const std::string
     if(p->stop)throw Cancelled{};fill(frames);if(p->stop)throw Cancelled{};
     ResetEvent(audio.value); // Do not mistake a pre-start ready signal for an already-consumed exclusive buffer.
     check(client->Start(),"Start WASAPI stream");stop.running=true;started=true;
-    {std::lock_guard<std::mutex> lock(p->status_lock);p->status.state=SF_PLAYING;++p->status.started_sequence;p->status.output_channels=mix.value->nChannels;p->status.output_rate=int(mix.value->nSamplesPerSec);p->status.exclusive_active=exclusive?1:0;p->status.buffer_frames=int(frames);}
+    {std::lock_guard<std::mutex> lock(p->status_lock);p->status.state=SF_PLAYING;++p->status.started_sequence;p->status.output_channels=mix.value->nChannels;p->status.output_rate=int(mix.value->nSamplesPerSec);p->status.exclusive_active=exclusive?1:0;p->status.buffer_frames=int(frames);p->output_latency_ms=latency;p->output_mode=exclusive?SF_OUTPUT_EXCLUSIVE:(requested_exclusive?SF_OUTPUT_SHARED_FALLBACK:SF_OUTPUT_SHARED);}
     HANDLE events[]={p->stop_event,audio.value};
     for(;;) {
         DWORD wait=WaitForMultipleObjects(2,events,FALSE,2000);
@@ -190,19 +220,9 @@ int run_live(sf_live* p,const std::string& in_id,int in_sel,const std::string& o
     {HRESULT init=in_client->Initialize(AUDCLNT_SHAREMODE_SHARED,AUDCLNT_STREAMFLAGS_EVENTCALLBACK|AUDCLNT_STREAMFLAGS_NOPERSIST,buffer_ms>0?REFERENCE_TIME(buffer_ms)*10000:0,0,in_mix.value,nullptr);
      if(FAILED(init))throw std::runtime_error(access_hint(std::string("Initialize WASAPI capture stream (HRESULT 0x")+[&]{std::ostringstream s;s<<std::hex<<uint32_t(init);return s.str();}()+")"));}
     // Render: same exclusive/shared policy as sf_player_start.
-    AUDCLNT_SHAREMODE mode=exclusive?AUDCLNT_SHAREMODE_EXCLUSIVE:AUDCLNT_SHAREMODE_SHARED;
-    if(exclusive)check(out_client->IsFormatSupported(mode,out_mix.value,nullptr),"Exclusive mix format unsupported (no silent shared fallback)");
-    REFERENCE_TIME period=0,minimum=0;check(out_client->GetDevicePeriod(&period,&minimum),"Get device period");
-    REFERENCE_TIME duration=buffer_ms>0?REFERENCE_TIME(buffer_ms)*10000:(exclusive?std::max(period,minimum):0);
-    DWORD flags=AUDCLNT_STREAMFLAGS_EVENTCALLBACK|(exclusive?0:AUDCLNT_STREAMFLAGS_NOPERSIST);
-    HRESULT init=out_client->Initialize(mode,flags,duration,exclusive?duration:0,out_mix.value,nullptr);
-    if(exclusive && init==AUDCLNT_E_BUFFER_SIZE_NOT_ALIGNED) {
-        UINT32 aligned=0;check(out_client->GetBufferSize(&aligned),"Get exclusive aligned buffer size");
-        duration=REFERENCE_TIME(std::llround(10000000.0*aligned/out_mix.value->nSamplesPerSec));out_client.Reset();
-        check(out_dev->Activate(__uuidof(IAudioClient),CLSCTX_ALL,nullptr,reinterpret_cast<void**>(out_client.GetAddressOf())),"Reactivate aligned output");
-        init=out_client->Initialize(mode,flags,duration,duration,out_mix.value,nullptr);
-    }
-    check(init,"Initialize WASAPI output stream");
+    const bool requested_exclusive=exclusive;
+    initialize_output(out_dev.Get(),out_client,out_mix.value,exclusive,buffer_ms);
+    const double latency=output_latency(out_client.Get());
     Event in_event,out_event;if(!in_event.value || !out_event.value)throw std::runtime_error("Create WASAPI events failed");
     check(in_client->SetEventHandle(in_event.value),"Set input event");check(out_client->SetEventHandle(out_event.value),"Set output event");
     UINT32 in_frames=0,out_frames=0;check(in_client->GetBufferSize(&in_frames),"Get input buffer size");check(out_client->GetBufferSize(&out_frames),"Get output buffer size");
@@ -235,7 +255,7 @@ int run_live(sf_live* p,const std::string& in_id,int in_sel,const std::string& o
     {BYTE* bytes=nullptr;check(render->GetBuffer(out_frames,&bytes),"Prime output buffer");check(render->ReleaseBuffer(out_frames,AUDCLNT_BUFFERFLAGS_SILENT),"Submit silent prime");}
     ResetEvent(in_event.value);ResetEvent(out_event.value);
     check(in_client->Start(),"Start WASAPI capture");in_stop.running=true;check(out_client->Start(),"Start WASAPI output");out_stop.running=true;started=true;
-    {std::lock_guard<std::mutex> lock(p->status_lock);p->status.state=SF_PLAYING;++p->status.started_sequence;p->status.input_channels=in_ch;p->status.input_rate=in_rate;p->status.output_channels=out_ch;p->status.output_rate=out_rate;p->status.exclusive_active=exclusive?1:0;p->status.buffer_frames=int(out_frames);}
+    {std::lock_guard<std::mutex> lock(p->status_lock);p->status.state=SF_PLAYING;++p->status.started_sequence;p->status.input_channels=in_ch;p->status.input_rate=in_rate;p->status.output_channels=out_ch;p->status.output_rate=out_rate;p->status.exclusive_active=exclusive?1:0;p->status.buffer_frames=int(out_frames);p->output_latency_ms=latency;p->output_mode=exclusive?SF_OUTPUT_EXCLUSIVE:(requested_exclusive?SF_OUTPUT_SHARED_FALLBACK:SF_OUTPUT_SHARED);}
     HANDLE events[]={p->stop_event,in_event.value,out_event.value};
     for(;;) {
         DWORD wait=WaitForMultipleObjects(3,events,FALSE,2000);
@@ -316,6 +336,14 @@ int32_t sf_live_start(sf_live* p,const char* in_id,int32_t in_sel,const char* ou
         p->gain=gain;p->worker=std::thread(work_live,p,in_id?std::string(in_id):std::string(),in_sel,out_id?std::string(out_id):std::string(),out_sel,exclusive!=0,buffer_ms);return 1;
     }catch(const std::exception& e){std::lock_guard<std::mutex> lock(p->status_lock);p->status.state=SF_FAILED;p->status.reason=SF_DEVICE_ERROR;text(p->status.error_utf8,1024,e.what());return 0;}catch(...){return 0;}
 }
+double sf_live_output_latency_ms(sf_live* p) {
+    if(!p)return -1;std::lock_guard<std::mutex> lock(p->status_lock);
+    return p->status.state==SF_PLAYING || p->status.state==SF_DRAINING?p->output_latency_ms:-1;
+}
+int32_t sf_live_output_mode(sf_live* p) {
+    if(!p)return SF_OUTPUT_INACTIVE;std::lock_guard<std::mutex> lock(p->status_lock);
+    return p->status.state==SF_PLAYING || p->status.state==SF_DRAINING?p->output_mode:SF_OUTPUT_INACTIVE;
+}
 void sf_live_gain(sf_live* p,float gain) {if(p && std::isfinite(gain) && gain>=0 && gain<=4)p->gain=gain;}
 void sf_live_status_get(sf_live* p,sf_live_status* output) {if(!output)return;if(!p){*output={};return;}std::lock_guard<std::mutex> lock(p->status_lock);*output=p->status;p->status.input_peak=0;}
 void sf_live_stop(sf_live* p) {if(!p)return;std::lock_guard<std::mutex> guard(p->control);cancel_join(p);std::lock_guard<std::mutex> lock(p->status_lock);p->status.state=SF_STOPPED;p->status.reason=SF_CANCELLED;p->status.exclusive_active=0;}
@@ -351,6 +379,14 @@ int32_t sf_player_start(sf_player* p,sf_buffer* b,const char* id,int32_t selecte
         if(selected<0 || selected>64 || buffer_ms<0 || buffer_ms>2000)throw std::runtime_error("Invalid output channel or buffer request");
         p->worker=std::thread(work,p,b->pcm,id?std::string(id):std::string(),selected,exclusive!=0,buffer_ms);return 1;
     }catch(const std::exception& e){std::lock_guard<std::mutex> lock(p->status_lock);p->status.state=SF_FAILED;p->status.reason=SF_DEVICE_ERROR;text(p->status.error_utf8,1024,e.what());return 0;}catch(...){return 0;}
+}
+double sf_player_output_latency_ms(sf_player* p) {
+    if(!p)return -1;std::lock_guard<std::mutex> lock(p->status_lock);
+    return p->status.state==SF_PLAYING || p->status.state==SF_DRAINING?p->output_latency_ms:-1;
+}
+int32_t sf_player_output_mode(sf_player* p) {
+    if(!p)return SF_OUTPUT_INACTIVE;std::lock_guard<std::mutex> lock(p->status_lock);
+    return p->status.state==SF_PLAYING || p->status.state==SF_DRAINING?p->output_mode:SF_OUTPUT_INACTIVE;
 }
 void sf_player_loop(sf_player* p,int32_t loop) {if(p)p->loop=loop!=0;}
 void sf_player_status(sf_player* p,sf_status* output) {if(!output)return;if(!p){*output={};return;}std::lock_guard<std::mutex> lock(p->status_lock);*output=p->status;}

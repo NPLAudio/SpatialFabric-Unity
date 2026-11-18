@@ -53,8 +53,10 @@ namespace NPLAudio.SpatialFabric.Editor
             }
             if(missing)EditorGUILayout.HelpBox("Configured device is not in the cached list. Its ID is retained; playback will not fall back to a different device.",MessageType.Warning);
             if(!string.IsNullOrEmpty(NativeAudio.DeviceEnumerationError))EditorGUILayout.HelpBox(NativeAudio.DeviceEnumerationError,MessageType.None);
+            EditorGUILayout.LabelField("Effective OSC base",cue.EffectiveOscBase);
             EditorGUILayout.LabelField("Worker",$"{cue.WorkerState} / {cue.EndReason}");
             EditorGUILayout.LabelField("Actual output",$"{cue.ActualOutputChannels} ch / {cue.ActualOutputRate} Hz / {cue.ActualBufferFrames} frames / exclusive {cue.ExclusiveActive}");
+            EditorGUILayout.LabelField("Output mode / OS output latency",$"{cue.OutputMode} / "+(cue.OutputLatencyMilliseconds<0?"unavailable":cue.OutputLatencyMilliseconds.ToString("F2")+" ms (not acoustic)"));
             EditorGUILayout.LabelField("Prepared / playing / replay pending",$"{cue.IsPrepared} / {cue.IsPlaying} / {cue.ReplayPending}");
             if(!string.IsNullOrEmpty(cue.LastError))EditorGUILayout.HelpBox(cue.LastError,MessageType.Warning);
             using(new EditorGUILayout.HorizontalScope())

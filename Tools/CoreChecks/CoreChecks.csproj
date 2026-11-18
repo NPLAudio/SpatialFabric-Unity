@@ -8,6 +8,7 @@
   <ItemGroup>
     <Compile Include="../../Packages/com.nplaudio.spatialfabric/Runtime/Osc/*.cs" Link="Osc/%(Filename)%(Extension)" />
     <Compile Include="../../Packages/com.nplaudio.spatialfabric/Runtime/Playback/WavDecoder.cs" Link="Audio/WavDecoder.cs" />
+    <Compile Include="../../Packages/com.nplaudio.spatialfabric/Runtime/Playback/PlaybackPolicy.cs" Link="Audio/PlaybackPolicy.cs" />
     <Compile Include="../../Packages/com.nplaudio.spatialfabric/Runtime/Playback/PlaybackObservation.cs" Link="Audio/PlaybackObservation.cs" />
     <Compile Include="../../Packages/com.nplaudio.spatialfabric/Runtime/Protocols/CustomProtocol.cs" Link="Protocols/CustomProtocol.cs" />
     <Compile Include="../../Packages/com.nplaudio.spatialfabric/Runtime/Protocols/RoutingCsvCodec.cs" Link="Protocols/RoutingCsvCodec.cs" />

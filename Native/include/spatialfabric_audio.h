@@ -34,9 +34,21 @@ SF_AUDIO_API sf_player* sf_player_create(void);
 // Start accepts a request, not an acknowledgement. Poll status for actual worker start/error.
 // Empty device ID selects the default endpoint. Channel 0 maps corresponding channels;
 // channel 1..N maps the first source channel to one selected physical output.
+// Windows exclusive != 0 prefers exclusive, with shared fallback on the SAME endpoint
+// if exclusive format/initialization fails. macOS retains strict exclusive hog mode.
 SF_AUDIO_API int32_t sf_player_start(sf_player* player, sf_buffer* buffer, const char* device_id_utf8, int32_t output_channel, int32_t exclusive, int32_t buffer_ms, int32_t loop);
 SF_AUDIO_API void sf_player_loop(sf_player* player, int32_t loop);
 SF_AUDIO_API void sf_player_status(sf_player* player, sf_status* output);
+// Additive diagnostics; existing status layouts and ABI versions are unchanged.
+// Mode is active only while playing/draining. SHARED_FALLBACK means Windows retried
+// the same endpoint after an exclusive initialization failure (never a different device).
+enum sf_output_mode { SF_OUTPUT_INACTIVE=0, SF_OUTPUT_SHARED=1, SF_OUTPUT_EXCLUSIVE=2, SF_OUTPUT_SHARED_FALLBACK=3 };
+SF_AUDIO_API int32_t sf_player_output_mode(sf_player* player);
+// Cached OS output-path latency in milliseconds, or -1 if inactive/unavailable/null.
+// WASAPI: GetStreamLatency. Core Audio: device + safety offset + hardware buffer +
+// maximum output-stream latency. Excludes application queues and live bridge delay;
+// not a measured acoustic/round-trip latency. This query never opens a device.
+SF_AUDIO_API double sf_player_output_latency_ms(sf_player* player);
 // Stop cancels and joins the worker; destroy also stops. No callbacks enter managed code.
 SF_AUDIO_API void sf_player_stop(sf_player* player);
 SF_AUDIO_API void sf_player_destroy(sf_player* player);
@@ -61,6 +73,9 @@ SF_AUDIO_API sf_live* sf_live_create(void);
 SF_AUDIO_API int32_t sf_live_start(sf_live* live, const char* input_device_id_utf8, int32_t input_channel, const char* output_device_id_utf8, int32_t output_channel, int32_t exclusive, int32_t buffer_ms, float gain);
 SF_AUDIO_API void sf_live_gain(sf_live* live, float gain);
 SF_AUDIO_API void sf_live_status_get(sf_live* live, sf_live_status* output);
+// Same output-only diagnostics/latency semantics as the sf_player queries above.
+SF_AUDIO_API int32_t sf_live_output_mode(sf_live* live);
+SF_AUDIO_API double sf_live_output_latency_ms(sf_live* live);
 SF_AUDIO_API void sf_live_stop(sf_live* live);
 SF_AUDIO_API void sf_live_destroy(sf_live* live);
 #ifdef __cplusplus

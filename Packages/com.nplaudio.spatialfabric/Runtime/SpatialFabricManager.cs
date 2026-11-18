@@ -50,6 +50,24 @@ namespace NPLAudio.SpatialFabric
         public bool NetworkingAllowed => Application.isPlaying ? enableInPlay : enableInEditor;
         protected override void Awake(){base.Awake();if(customProtocol==null)customProtocol=new Protocols.CustomProtocolSettings();}
         protected override void OnValidate(){base.OnValidate();if(customProtocol==null)customProtocol=new Protocols.CustomProtocolSettings();foreach(var output in outputs)if(output!=null && string.IsNullOrEmpty(output.key))output.key=System.Guid.NewGuid().ToString("N");}
+        /// <summary>Read-only, world-scoped diagnostics; shared overrides still deliberately fan out.</summary>
+        public List<string> PlaybackAddressDiagnostics()
+        {
+            var owners=new Dictionary<string,int>(StringComparer.Ordinal);
+            foreach(var cue in SceneInventory.InWorld<PlaybackCue>(this))
+            {
+                string address=cue.EffectiveOscBase;
+                if(cue.ValidBase)owners[address]=owners.TryGetValue(address,out int count)?count+1:1;
+            }
+            foreach(var cue in SceneInventory.InWorld<LiveInputCue>(this))
+            {
+                string address=cue.oscBase;
+                if(cue.ValidBase)owners[address]=owners.TryGetValue(address,out int count)?count+1:1;
+            }
+            var diagnostics=new List<string>();
+            foreach(var owner in owners)if(owner.Value>1)diagnostics.Add("Duplicate playback OSC base: "+owner.Key+" ("+owner.Value+" cues; commands fan out)");
+            diagnostics.Sort(StringComparer.Ordinal);return diagnostics;
+        }
         public bool StartNetworking()
         {
             if (!NetworkingAllowed) { LastError = "Networking is disabled in this context"; return false; }
@@ -79,7 +97,7 @@ namespace NPLAudio.SpatialFabric
         {
             if(playing)pendingPlayback.Remove(cue);
             if(!IsListening || !NetworkingAllowed || !ContainsScene(cue.gameObject.scene) || !cue.ValidBase)return;
-            try {spatial.Send(targetIp,monitorPort,new OscMessage(cue.oscBase+"/state",OscArg.Float(playing?1:0)));++Sent;}
+            try {spatial.Send(targetIp,monitorPort,new OscMessage(cue.EffectiveOscBase+"/state",OscArg.Float(playing?1:0)));++Sent;}
             catch(Exception error) when(error is FormatException || error is ArgumentException || error is System.Net.Sockets.SocketException) {LastError=error.Message;}
         }
         void OnDestroy() { StopNetworking(); }
@@ -161,7 +179,7 @@ namespace NPLAudio.SpatialFabric
                 if(cue==null || !cue.isActiveAndEnabled || !ContainsScene(cue.gameObject.scene) || pendingPlayback[cue]!=cue.AudioRequestVersion || cue.WorkerState==Audio.AudioWorkerState.Stopped) {pendingPlayback.Remove(cue);continue;}
                 if(cue.WorkerState!=Audio.AudioWorkerState.Failed)continue;
                 pendingPlayback.Remove(cue);LastError=cue.LastError;
-                SendMonitor(PlaybackControl.Ack(cue.oscBase,"play","failed",cue.IsPlaying,cue.LastError));
+                SendMonitor(PlaybackControl.Ack(cue.EffectiveOscBase,"play","failed",cue.IsPlaying,cue.LastError));
             }
             foreach(var cue in new List<LiveInputCue>(pendingLive.Keys))
             {
@@ -175,6 +193,8 @@ namespace NPLAudio.SpatialFabric
         {
             if(!message.Address.StartsWith(cueBase+"/",StringComparison.Ordinal))return;
             string command=message.Address.Substring(cueBase.Length+1);
+            // Engine-only feedback must not create another acknowledgement, even when reflected.
+            if(PlaybackControl.IsFeedback(command))return;
             string result=PlaybackControl.Decide(command,message,live),detail="";
             if(result=="received")
             {
@@ -192,10 +212,12 @@ namespace NPLAudio.SpatialFabric
         }
         void DispatchPlayback(OscMessage message)
         {
+            // Filter before matching bases: nested overrides must not acknowledge another cue's feedback.
+            if(PlaybackControl.IsFeedbackAddress(message.Address))return;
             foreach (var cue in SceneInventory.InWorld<PlaybackCue>(this))
             {
                 if (!cue.ValidBase) continue;
-                DispatchCommand(message,cue.oscBase,false,()=>cue.IsPlaying,
+                DispatchCommand(message,cue.EffectiveOscBase,false,()=>cue.IsPlaying,
                     ()=>{pendingPlayback.Remove(cue);bool ok=cue.TryPlay();if(ok)pendingPlayback[cue]=cue.AudioRequestVersion;return ok;},
                     ()=>{pendingPlayback.Remove(cue);cue.Stop();},()=>cue.SetLoop(PlaybackControl.Loop(message)),()=>{},()=>cue.LastError);
             }

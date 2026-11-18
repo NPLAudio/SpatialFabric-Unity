@@ -15,8 +15,11 @@ namespace NPLAudio.SpatialFabric.Audio
         public readonly ulong StartedSequence, EndedSequence, CapturedFrames, RenderedFrames, Underruns, Overruns;
         public readonly float InputPeak;
         public readonly string Error;
-        internal LiveStatus(NativeLive.Status s)
+        public readonly AudioOutputMode OutputMode;
+        public readonly double OutputLatencyMilliseconds;
+        internal LiveStatus(NativeLive.Status s,AudioOutputMode mode=AudioOutputMode.Unavailable,double latency=-1)
         {
+            OutputMode=mode;OutputLatencyMilliseconds=double.IsNaN(latency) || double.IsInfinity(latency) || latency<0?-1:latency;
             State=(AudioWorkerState)s.state;Reason=(AudioEndReason)s.reason;InputChannels=s.inChannels;InputRate=s.inRate;OutputChannels=s.outChannels;OutputRate=s.outRate;
             ExclusiveActive=s.exclusive!=0;BufferFrames=s.buffer;LatencyFrames=s.latency;StartedSequence=s.started;EndedSequence=s.ended;CapturedFrames=s.captured;RenderedFrames=s.rendered;
             Underruns=s.underruns;Overruns=s.overruns;InputPeak=float.IsNaN(s.peak)?0:Mathf.Clamp01(s.peak);
@@ -43,6 +46,8 @@ namespace NPLAudio.SpatialFabric.Audio
         [DllImport(Library,CallingConvention=CallingConvention.Cdecl)] static extern int sf_live_start(IntPtr live,[In] byte[] inputId,int inputChannel,[In] byte[] outputId,int outputChannel,int exclusive,int bufferMs,float gain);
         [DllImport(Library,CallingConvention=CallingConvention.Cdecl)] static extern void sf_live_gain(IntPtr live,float gain);
         [DllImport(Library,CallingConvention=CallingConvention.Cdecl)] static extern void sf_live_status_get(IntPtr live,out Status status);
+        [DllImport(Library,CallingConvention=CallingConvention.Cdecl)] static extern int sf_live_output_mode(IntPtr live);
+        [DllImport(Library,CallingConvention=CallingConvention.Cdecl)] static extern double sf_live_output_latency_ms(IntPtr live);
         [DllImport(Library,CallingConvention=CallingConvention.Cdecl)] static extern void sf_live_stop(IntPtr live);
         [DllImport(Library,CallingConvention=CallingConvention.Cdecl)] static extern void sf_live_destroy(IntPtr live);
         static string Utf8(byte[] bytes) {int end=Array.IndexOf(bytes,(byte)0);return Encoding.UTF8.GetString(bytes,0,end<0?bytes.Length:end);}
@@ -80,7 +85,14 @@ namespace NPLAudio.SpatialFabric.Audio
             internal Session(IntPtr value):base(true) {SetHandle(value);}
             protected override bool ReleaseHandle() {sf_live_destroy(handle);return true;}
             T With<T>(Func<IntPtr,T> action) {bool held=false;try{DangerousAddRef(ref held);return action(DangerousGetHandle());}finally{if(held)DangerousRelease();}}
-            public LiveStatus Poll() => With(h=>{sf_live_status_get(h,out var status);return new LiveStatus(status);});
+            bool hasMode=true,hasLatency=true;
+            public LiveStatus Poll() => With(h=>
+            {
+                sf_live_status_get(h,out var status);var mode=AudioOutputMode.Unavailable;double latency=-1;
+                if(hasMode)try{mode=(AudioOutputMode)sf_live_output_mode(h);}catch(EntryPointNotFoundException){hasMode=false;}
+                if(hasLatency)try{latency=sf_live_output_latency_ms(h);}catch(EntryPointNotFoundException){hasLatency=false;}
+                return new LiveStatus(status,mode,latency);
+            });
             public void Stop() {With(h=>{sf_live_stop(h);return 0;});}
             public void SetGain(float gain) {if(float.IsNaN(gain) || float.IsInfinity(gain) || gain<0 || gain>4)throw new ArgumentOutOfRangeException(nameof(gain));With(h=>{sf_live_gain(h,gain);return 0;});}
             /// <summary>A request, not an acknowledgement. Poll for the real worker state.</summary>

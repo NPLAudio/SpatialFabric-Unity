@@ -89,6 +89,18 @@ advertised. Core Audio **ARM64 native compilation and silent tests now pass host
 Mac Unity/player, Intel/universal and physical audio acceptance remain unverified.
 See [Native/README.md](Native/README.md) and the validation addendum.
 
+## AudioLoom playback controls
+
+Playback cues support opt-in play-mode-only `playOnStart` (default false), fixed or
+seeded deterministic random min/max replay, and main-tick restart of active audio after
+route edits (never idle autoplay). Blank OSC bases derive per-scene-instance/hierarchy
+addresses; existing explicit bases are preserved. Use explicit overrides for stable controller
+profiles. Manager validation diagnoses duplicate playback/live bases; shared groups still fan out.
+Incoming `/ack` and `/state` feedback is suppressed before dispatch on both ports.
+Optional additive native exports surface output mode/shared fallback and cached OS latency;
+older ABI-v1 plugins report unavailable diagnostics safely. OS latency is not acoustic latency.
+See [package lifecycle policies](Packages/com.nplaudio.spatialfabric/Documentation~/index.md#pcm--lifecycle).
+
 ## Editor / routing
 
 **Tools → SpatialFabric → Open Window** provides Stage, Objects, Outputs, Playback, CSV

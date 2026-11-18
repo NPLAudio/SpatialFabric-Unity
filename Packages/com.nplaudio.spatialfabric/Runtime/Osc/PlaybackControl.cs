@@ -3,6 +3,12 @@ namespace NPLAudio.SpatialFabric.Osc
 {
     public static class PlaybackControl
     {
+        public static bool IsFeedback(string command) => command=="ack" || command=="state";
+        public static bool IsFeedbackAddress(string address)
+        {
+            if(string.IsNullOrEmpty(address))return false;
+            return IsFeedback(address.Substring(address.LastIndexOf('/')+1));
+        }
         public static bool Play(OscMessage message)
         {
             if(message.Arguments.Length==0)return true;

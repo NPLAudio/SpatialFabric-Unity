@@ -52,6 +52,7 @@ namespace NPLAudio.SpatialFabric.Editor
                 if(manager.outputs.Count>0 && manager.stage!=null)foreach(var output in manager.outputs)try{if(output!=null)Protocols.SpatialOutputs.Id(binding,output);}catch(FormatException e){problems.Add(binding.name+": "+e.Message);}
             }
             foreach(var duplicate in manager.objects.Where(o=>o!=null).GroupBy(o=>o.Key).Where(g=>g.Count()>1))problems.Add("Duplicate binding identity/reference: "+duplicate.Key);
+            problems.AddRange(manager.PlaybackAddressDiagnostics());
             return problems;
         }
     }

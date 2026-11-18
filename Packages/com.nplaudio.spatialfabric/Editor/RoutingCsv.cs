@@ -113,7 +113,7 @@ namespace NPLAudio.SpatialFabric.Editor
             return Preview(manager,text,PlaybackHeader,PlaybackSchema,(row,get)=>
             {
                 string key=get("Key");if(!targets.TryGetValue(key,out var target))throw new FormatException("Unknown playback key (no label fallback): "+key);
-                string device=get("DeviceId"),osc=get("OscBase");if(device.IndexOf('\0')>=0 || !Osc.OscCodec.ValidAddress(osc))throw new FormatException("Invalid device ID or explicit OSC base");
+                string device=get("DeviceId"),osc=get("OscBase");if(device.IndexOf('\0')>=0 || !string.IsNullOrWhiteSpace(osc) && !Osc.OscCodec.ValidAddress(osc))throw new FormatException("Invalid device ID or explicit OSC base");
                 int channel=Integer(get("OutputChannel"),0,64),buffer=Integer(get("BufferMsRequested"),0,2000);float delay=Scalar(get("ReplayDelaySeconds"),0,86400);
                 bool loop=Boolean(get("Loop")),replay=Boolean(get("AutoReplay")),exclusive=Boolean(get("ExclusiveRequested"));
                 return Change(target,()=>{target.configuredDeviceId=device;target.outputChannel=channel;target.oscBase=osc;target.loop=loop;target.autoReplay=replay;target.replayDelaySeconds=delay;target.exclusiveRequested=exclusive;target.bufferMsRequested=buffer;});

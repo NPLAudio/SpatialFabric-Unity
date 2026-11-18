@@ -39,6 +39,8 @@ namespace NPLAudio.SpatialFabric
         public ulong Underruns { get; private set; }
         public ulong Overruns { get; private set; }
         public float LatencyMilliseconds { get; private set; }
+        public AudioOutputMode OutputMode { get; private set; } = AudioOutputMode.Unavailable;
+        public double OutputLatencyMilliseconds { get; private set; } = -1;
         public bool ValidBase => OscCodec.ValidAddress(oscBase);
         internal uint AudioRequestVersion { get; private set; }
         NativeLive.Session session;
@@ -75,6 +77,7 @@ namespace NPLAudio.SpatialFabric
         void Observe(double now)
         {
             LiveStatus s=session.Poll();WorkerState=s.State;EndReason=s.Reason;ActualInputChannels=s.InputChannels;ActualInputRate=s.InputRate;ActualOutputChannels=s.OutputChannels;ActualOutputRate=s.OutputRate;
+            OutputMode=s.OutputMode;OutputLatencyMilliseconds=s.OutputLatencyMilliseconds;
             InputPeak=Mathf.Max(InputPeak*0.9f,s.InputPeak);Underruns=s.Underruns;Overruns=s.Overruns;LatencyMilliseconds=s.InputRate>0?s.LatencyFrames*1000f/s.InputRate:0;
             if(!string.IsNullOrEmpty(s.Error))LastError=s.Error;
             observation.Observe(s.State,s.Reason,s.StartedSequence,s.EndedSequence,false,false,false,0,now);

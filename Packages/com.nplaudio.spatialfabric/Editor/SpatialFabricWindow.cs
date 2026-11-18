@@ -100,13 +100,15 @@ namespace NPLAudio.SpatialFabric.Editor
             }
             foreach(var cue in SceneInventory.InWorld<PlaybackCue>(manager))
             {
+                EditorGUILayout.LabelField("OSC base",cue.EffectiveOscBase);
                 EditorGUILayout.LabelField(cue.name+" — "+cue.WorkerState+(cue.ReplayPending?" / replay pending":""),EditorStyles.boldLabel);
-                var s=new SerializedObject(cue);s.Update();Fields(s,"preparedAudio","clip","oscBase","configuredDeviceId","outputChannel","loop","autoReplay","replayDelaySeconds","exclusiveRequested","bufferMsRequested");s.ApplyModifiedProperties();
+                var s=new SerializedObject(cue);s.Update();Fields(s,"preparedAudio","clip","oscBase","configuredDeviceId","outputChannel","loop","autoReplay","playOnStart","replayDelaySeconds","randomReplayDelay","replayDelayMin","replayDelayMax","replayRandomSeed","exclusiveRequested","bufferMsRequested");s.ApplyModifiedProperties();
                 using(new EditorGUILayout.HorizontalScope())
                 {
                     if(GUILayout.Button("Prepare PCM"))cue.Prepare();if(GUILayout.Button("Play physical output"))cue.TryPlay();if(GUILayout.Button("Stop + cancel replay"))cue.Stop();if(GUILayout.Button("Release PCM"))cue.ReleaseAudio();
                 }
                 foreach(var device in NativeAudio.CachedDevices)if(GUILayout.Button($"Use {device.name} / {device.channels} ch")){Undo.RecordObject(cue,"Set output device");cue.configuredDeviceId=device.id;EditorUtility.SetDirty(cue);}
+                EditorGUILayout.LabelField("Output mode / OS output latency",$"{cue.OutputMode} / "+(cue.OutputLatencyMilliseconds<0?"unavailable":cue.OutputLatencyMilliseconds.ToString("F2")+" ms (not acoustic)"));
                 EditorGUILayout.LabelField("Observed output",$"{cue.ActualOutputChannels} ch / {cue.ActualOutputRate} Hz / {cue.ActualBufferFrames} frames / exclusive {cue.ExclusiveActive}");
                 if(!string.IsNullOrEmpty(cue.LastError))EditorGUILayout.HelpBox(cue.LastError,MessageType.Warning);EditorGUILayout.Space(10);
             }

@@ -26,6 +26,31 @@ namespace NPLAudio.SpatialFabric.Tests
             if(root!=null)Object.DestroyImmediate(root);if(asset!=null)Object.DestroyImmediate(asset);
             if(scene.IsValid())EditorSceneManager.ClosePreviewScene(scene);
         }
+        [Test] public void RouteEditRestartsSubmittedRequestOnceOnTickAndNeverStartsIdleCue()
+        {
+            var cue=root.AddComponent<PlaybackCue>();cue.preparedAudio=asset;
+            cue.configuredDeviceId="spatialfabric-invalid-route-one";Assert.That(cue.TryPlay(),Is.True);
+            // Model an edit before the next status poll, irrespective of native worker timing.
+            var flags=System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic;
+            var poll=typeof(PlaybackCue).GetField("nextPoll",flags);poll.SetValue(cue,double.PositiveInfinity);
+            var version=typeof(PlaybackCue).GetProperty("AudioRequestVersion",flags);uint before=(uint)version.GetValue(cue);
+            cue.configuredDeviceId="spatialfabric-invalid-route-two";cue.outputChannel=2;
+            Assert.That((uint)version.GetValue(cue),Is.EqualTo(before),"Field edits cannot perform I/O");
+            cue.Tick(1);Assert.That((uint)version.GetValue(cue),Is.GreaterThan(before));
+            uint restarted=(uint)version.GetValue(cue);poll.SetValue(cue,double.PositiveInfinity);cue.Tick(2);
+            Assert.That((uint)version.GetValue(cue),Is.EqualTo(restarted));
+            cue.Stop();uint stopped=(uint)version.GetValue(cue);cue.outputChannel=3;cue.Tick(3);
+            Assert.That((uint)version.GetValue(cue),Is.EqualTo(stopped));Assert.That(cue.ReplayPending,Is.False);
+        }
+        [Test] public void OptionalOutputDiagnosticsAreSafeOnIdlePlayer()
+        {
+            using(var player=NativeAudio.CreatePlayer())
+            {
+                var status=player.Poll();Assert.That(status.State,Is.EqualTo(AudioWorkerState.Stopped));
+                Assert.That(status.OutputLatencyMilliseconds,Is.EqualTo(-1));
+                Assert.That(status.OutputMode,Is.EqualTo(AudioOutputMode.Unavailable).Or.EqualTo(AudioOutputMode.Inactive));
+            }
+        }
         [Test] public void ExplicitDeviceRefreshParsesNativeUtf8InventoryWithoutPlayback()
         {
             var devices=NativeAudio.RefreshDevices();Assert.That(NativeAudio.DeviceEnumerationError,Is.Empty);

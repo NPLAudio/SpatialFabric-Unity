@@ -31,6 +31,7 @@ namespace NPLAudio.SpatialFabric.Tests
             SceneInventory.RegisterMainThread();scene=EditorSceneManager.NewPreviewScene();
             root=new GameObject("Silent acknowledgement test");SceneManager.MoveGameObjectToScene(root,scene);
             cue=root.AddComponent<PlaybackCue>();live=root.AddComponent<LiveInputCue>();manager=root.AddComponent<SpatialFabricManager>();
+            cue.oscBase="/test/playback";
             monitor=new OscEndpoint();monitor.Start("127.0.0.1",FreePort());
             manager.enableInEditor=true;manager.monitorPort=monitor.Bound.Port;
             manager.spatialInputPort=FreePort();do {manager.playbackInputPort=FreePort();}while(manager.spatialInputPort==manager.playbackInputPort);
@@ -81,8 +82,10 @@ namespace NPLAudio.SpatialFabric.Tests
             Send(live.oscBase+"/gain",false,OscArg.Float(9));Ack(Collect(1).Single(),"gain","rejected",0);Assert.That(live.gain,Is.EqualTo(1));
             Send(live.oscBase+"/gain",false,OscArg.Int(2));Ack(Collect(1).Single(),"gain","received",0);Assert.That(live.gain,Is.EqualTo(2));
             Send(live.oscBase+"/loop");Ack(Collect(1).Single(),"loop","rejected",0);
-            Send(cue.oscBase+"/state",false,OscArg.Float(1));Ack(Collect(1).Single(),"state","ignored",0);
-            Send(cue.oscBase+"/ack",false,OscArg.String("play"));Ack(Collect(1).Single(),"ack","ignored",0);
+            long sent=manager.Sent;
+            Send(cue.oscBase+"/state",false,OscArg.Float(1));
+            Send(cue.oscBase+"/ack",false,OscArg.String("play"));
+            Assert.That(manager.Sent,Is.EqualTo(sent));Assert.That(monitor.Drain(),Is.Empty);
             Send(cue.oscBase+"/"+new string('x',40));Ack(Collect(1).Single(),new string('x',32),"rejected",0);
             Send(cue.oscBase+"/stop");var replies=Collect(2);Ack(replies[0],"stop","received",0);Assert.That(replies[1].Arguments[0].Value,Is.EqualTo(0f));
             Assert.That(cue.IsPrepared,Is.False);Assert.That(live.IsLive,Is.False);
@@ -93,7 +96,27 @@ namespace NPLAudio.SpatialFabric.Tests
             var observation=(PlaybackObservation)typeof(PlaybackCue).GetField("observation",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(cue);
             observation.Observe(AudioWorkerState.Playing,AudioEndReason.None,1,0,false,false,false,0,0);Collect(1);
             Send(cue.oscBase+"/status");var replies=Collect(2);Ack(replies[0],"status","received",1);Assert.That(replies[1].Arguments[0].Value,Is.EqualTo(1f));
-            Send(cue.oscBase+"/state",false,OscArg.Float(0));Ack(Collect(1).Single(),"state","ignored",1);Assert.That(cue.IsPlaying,Is.True);
+            long sent=manager.Sent;Send(cue.oscBase+"/state",false,OscArg.Float(0));Assert.That(manager.Sent,Is.EqualTo(sent));Assert.That(cue.IsPlaying,Is.True);
+        }
+        [Test] public void FeedbackOnBothPortsAndReflectedMonitorNeverProducesReplies()
+        {
+            // The live base deliberately nests beneath playback; feedback must be filtered
+            // before a parent cue can reject and acknowledge the remaining subpath.
+            live.oscBase=cue.oscBase+"/nested";
+            foreach(bool spatial in new[]{false,true})
+            foreach(string address in new[]{cue.oscBase,live.oscBase})
+            foreach(string command in new[]{"ack","state"})
+            {
+                long sent=manager.Sent;Send(address+"/"+command,spatial,OscArg.Float(1));
+                Assert.That(manager.Sent,Is.EqualTo(sent));Assert.That(monitor.Drain(),Is.Empty);
+            }
+            manager.monitorPort=manager.playbackInputPort;
+            long before=manager.Sent,received=manager.Received;Send(cue.oscBase+"/status");Assert.That(manager.Sent,Is.EqualTo(before+2));
+            // The status ack/state return through the command listener and must terminate there.
+            var deadline=DateTime.UtcNow.AddSeconds(3);
+            while(manager.Received<received+3 && DateTime.UtcNow<deadline){Thread.Sleep(5);manager.Tick(Time.realtimeSinceStartupAsDouble);}
+            Assert.That(manager.Received,Is.GreaterThanOrEqualTo(received+3));
+            Assert.That(manager.Sent,Is.EqualTo(before+2));Assert.That(cue.IsPrepared,Is.False);Assert.That(live.IsLive,Is.False);
         }
         [Test] public void LocalStopRetiresPendingStartBeforeUnrelatedFailure()
         {
