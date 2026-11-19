@@ -103,15 +103,29 @@ See [package lifecycle policies](Packages/com.nplaudio.spatialfabric/Documentati
 
 ## Editor / routing
 
-**Tools → SpatialFabric → Open Window** provides Stage, Objects, Outputs, Playback, CSV
-and Diagnostics panels. Opening panels never starts transports or prepares PCM.
+**Tools → SpatialFabric → Open Window** opens the **Scene Objects** central authoring grid
+(no manager required), alongside Stage, Objects, Outputs, Playback, CSV and Diagnostics.
+Opening panels never starts transports or prepares PCM. Existing scene managers are
+found automatically; an explicit manager choice is pinned until auto-find is re-enabled.
+Stage, Objects and Playback also browse loaded-scene components without a manager.
+Object sections are collapsible, with **Expand all / Collapse all** and grouped properties.
+
+- Scene Objects: all loaded-scene GameObjects including inactive/unconfigured, search/type
+  filter/multi-selection, explicit per-type component addition with one Undo, and shared
+  serialized multi-object SpatialFabric fields with mixed values. Edit Mode/idle only;
+  no startup opt-ins or capture/playback controls. See [Docs/SceneObjectManager.md](Docs/SceneObjectManager.md).
 
 - Stage: dimensions/flips, Off/position-only/position+orientation virtual listener, radar
   Top/Front/Side/isometric and bounded view-only history. Authored stage never follows.
-- Objects: bind selected scene objects, explicit pose/label, bulk sequential IDs/mute,
-  per-protocol and per-output ID/field overrides, standard multi-object Undo.
-- Outputs: any number of independent ADM/Custom destinations with individual mode, rate,
-  enable and successful-frame change cache. A nonempty list replaces legacy endpoints.
+- Objects: existing loaded-scene SpatialObjects, including unbound objects; explicit
+  binding, pose/label, bulk bound-row sequential IDs/mute and per-output overrides.
+  Browsing never enrolls an object into runtime routing.
+- Outputs: true crosspoint grid (cue rows × interface/channel columns), green configured-route checks, two-axis scrolling, Undo and cached offline layouts;
+- Audio interface / output channel dropdowns in Outputs and Playback, with explicit Refresh Interfaces;
+  unplugging never clears cue assignments or silently chooses another interface. Click
+  **Refresh Interfaces** for explicit inventory; see [Docs/AudioRoutingMatrix.md](Docs/AudioRoutingMatrix.md).
+  The separate collapsed **OSC / network destinations** section retains independent
+  ADM/Custom targets, mode/rate/enable/change caches and legacy endpoint fallback.
 - Playback: prepared-source/loaded-clip assignment, explicit device refresh/prepare/play/
   stop/release, loop/replay, actual cached worker/format state, multi-cue inspector.
 - CSV: bounded full-file preview/confirm/one Undo; v1 route compatibility and v2 exact
@@ -119,7 +133,7 @@ and Diagnostics panels. Opening panels never starts transports or prepares PCM.
   starts native preparation/devices/transport. See [Docs/RoutingCsv.md](Docs/RoutingCsv.md).
 - Diagnostics: loaded-world references, configured vs bound sockets, errors/identity repair.
 
-Owner scene is the default world. `additionalScenePaths` explicitly opts loaded additive
+For runtime routing/discovery, owner scene is the default world. `additionalScenePaths` explicitly opts loaded additive
 scenes into bindings/playback/discovery; unrelated scenes stay excluded. Saved editor
 identity survives reload; live prefab instances get distinct session keys without query
 mutation. Optional additive listener references require explicit stage opt-in too.

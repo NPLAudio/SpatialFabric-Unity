@@ -1,4 +1,25 @@
-# Unity 0.5 completion evidence — Windows functional port
+# Unity validation — current authoring and historical port evidence
+
+## Current scene manager and audio routing (2026-11-18)
+
+Unity **6000.6.9f1**, isolated Windows project, graphics and native integrations
+required: **139 EditMode + 6 PlayMode passed**, zero failures/skips. Python tooling:
+**54 tests, 52 passed and 2 skipped**. Evidence:
+`C:/Temp/SFSceneObjectManager-20261118/true-crosspoint-clipping/validation.json`.
+
+Includes all-scene-object authoring, live selection/data binding, explicit capability
+attachment, collapsible properties, true crosspoint routing, interface/channel
+selectors, exact-ID offline history, guarded Undo and ancestor-clipped input.
+See [Scene Objects](Docs/SceneObjectManager.md), [Audio Routing](Docs/AudioRoutingMatrix.md)
+and [current parity/platform limits](Docs/PARITY.md). Tests do not certify physical
+output/hotplug or macOS. User InputManager settings remain excluded from feature commits.
+
+Windows IL2CPP support was subsequently installed with approval, and actual Mono /
+IL2CPP Development plus a non-Development IL2CPP validation player passed; exact
+paths/configuration are in [PARITY.md](Docs/PARITY.md#actual-windows-player-checks).
+These earlier player checks predate the new editor UI; no new release is implied.
+
+## Historical Unity 0.5 completion evidence
 
 Host: Windows 11, Unity **6000.6.9f1**, MSVC 2022 x64 / Windows SDK 10.0.26100.
 Implementation/deployment checks below do not certify physical sound or untested platforms.
@@ -54,7 +75,7 @@ across Git checkouts. Source binaries, editor state and local reports remain exc
 The Windows-host results below are the earlier local record, not relabeled hosted Unity
 runs. GitHub Actions is now disabled; Unity tests are invoked locally using the documented tools.
 
-## Current measured gates
+## Historical measured gates (before current authoring additions)
 
 | Gate | Measured result |
 |---|---|
@@ -149,10 +170,11 @@ Test-only smoke helpers are not dependencies required by the distributable sampl
 - **Core Audio ARM64 native compilation/silent tests now pass hosted macOS CI** (addendum
   above); they were not run on this Windows host. Mac Unity/player, Intel/universal and
   real hardware behavior are still unverified. A native job does not certify those gates.
-- **IL2CPP was attempted, not passed.** Unity reported that Windows IL2CPP support is not
-  installed. CLI dry-run identified the module; install with `--no-elevate` returned
-  `ELEVATION_REQUIRED`. No automatic elevation/license acceptance occurred. With approved
-  installation, rerun `Tools/validate_player.py --il2cpp` and record real results.
+- **Historical IL2CPP blocker, now superseded:** the original attempt found the
+  module missing (`ELEVATION_REQUIRED`). User-approved installation and actual
+  Development/non-Development IL2CPP player checks later passed; see the current
+  section above and [PARITY.md](Docs/PARITY.md#actual-windows-player-checks).
+  This does not qualify every stripping profile or target machine.
 - Real physical channel mapping, stereo image/fidelity, working-stream device loss,
   exclusive/hog compatibility, audible EOF/replay behavior and sustained latency require
   explicit target-hardware acceptance. No silent test can certify those.

@@ -29,6 +29,21 @@ loadable but cannot provide the new fallback behavior/diagnostics. Build/deploy 
 updated native plugin explicitly using `python Tools/build_native.py --install`
 with the example closed. This changes a DLL, not physical device routing.
 
+## Central editor authoring
+
+- [Scene Objects](SceneObjectManager.md) lists loaded authoring-scene objects,
+  including unconfigured/inactive objects, with explicit capability attachment,
+  real mixed-value properties, Undo and Hierarchy selection following.
+- Stage/Objects/Playback also show existing unassigned/unbound components; manager
+  resolution is read-only and ambiguous managers require an explicit choice.
+- [Audio routing](AudioRoutingMatrix.md) uses true cue-row × interface/channel
+  crosspoints, sticky headers, bounded visible painting and dropdown selectors.
+  Only explicit Refresh Interfaces enumerates devices; exact-ID offline history
+  retains unplugged layouts without changing any cue route. Checks mean configured,
+  not live signal. Fresh mutation guards and native Undo apply to both controls.
+- Object/property foldouts keep individual Inspectors available. These editor
+  surfaces do not implicitly enroll objects or activate audio/capture/networking.
+
 ## Broader spatial-port surface
 
 The AudioLoom follow-up does not replace the existing spatial implementation or
@@ -48,7 +63,7 @@ its historical validation record in [../VALIDATION.md](../VALIDATION.md).
 | Windows | WASAPI shared/exclusive-preferred with same-endpoint fallback; fail-closed configured routing |
 | macOS | Core Audio AudioQueue, exact UID routing, discrete channels, hog-mode requests |
 | CSV | v1 routes/v2 GUID-localFileId sources, preview/stale guards/one Undo |
-| Authoring | Stage/Objects/Outputs/Playback/CSV/Diagnostics, prefab overrides, bulk controls |
+| Authoring | Scene Objects, Stage/Objects/Outputs/Playback/CSV/Diagnostics, prefab overrides, bulk controls; crosspoint audio grid, interface/channel selectors and offline inventory cache |
 | Radar | Top/Front/Side/isometric, selection and bounded view-only trails |
 | Showcase/deployment | Four-room walker/cues/HUD, Windows Mono/IL2CPP Development-player checks and UPM/sample consumer tooling |
 
@@ -68,10 +83,11 @@ walls and physical renderer acknowledgement remain separate.
   Unity **6000.6.9f1** assemblies: **0 errors**. The source-change regression was
   included in the final compile pass.
 
-- **Actual Unity engine execution:** **81/81 EditMode + 6/6 PlayMode passed**, zero
-  skips/failures, with `--graphics --require-native` in a disposable project. The final
-  run used a freshly rebuilt current native DLL installed only in that temporary copy.
-  Evidence: `C:/Users/davo_/AppData/Local/Temp/SpatialFabricUnityValidation-m62necnh/`.
+- **Actual Unity engine execution:** **139/139 EditMode + 6/6 PlayMode passed**, zero
+  skips/failures, with `--graphics --require-native` in a disposable project. This
+  supersedes the earlier 81-test playback-only gate and includes actual-window
+  live binding, grid clicks/Undo, ancestor clipping, dropdowns and offline history.
+  Evidence: `C:/Temp/SFSceneObjectManager-20261118/true-crosspoint-clipping/validation.json`.
 - The earlier licensing error is historical: activation succeeded afterward and the
   current Editor accepted the license. No activation changes were made by this work.
 - Fixed a test's flat Editor JSON assumption: Unity 6000.6 wraps MonoBehaviour
@@ -124,4 +140,5 @@ preparation, not unlimited long-form streaming.
 - Older Unity versions and Linux/WebGL direct-device playback are not certified.
 
 Existing user edits to `ExampleProject/ProjectSettings/InputManager.asset` were
-preserved; no working-project Library/Temp, staged files or commits were required.
+preserved and excluded from feature commits. Validation never reused the working
+project's Library/Temp; source publication does not imply new release builds.

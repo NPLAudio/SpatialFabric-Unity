@@ -21,6 +21,18 @@
 - Actual Windows Mono and IL2CPP Development players built/ran with all silent smoke assertions true and 9 scene records. Evidence: `C:/Users/davo_/AppData/Local/Temp/SpatialFabricUnityPlayer-in8uzb2i/` and `C:/Users/davo_/AppData/Local/Temp/SpatialFabricUnityPlayer-0_cf4jwx/`. Windows IL2CPP module installation was explicitly requested and succeeded through the official Unity CLI.
 - No physical audio or microphone was requested by validation. Hardware, acoustic latency, macOS, and other release/stripping profiles remain external. An additional non-Development IL2CPP player passed with project-default stripping; only the disposable build driver's Development flag was removed. Evidence: `C:/Users/davo_/AppData/Local/Temp/SpatialFabricUnityPlayer-whkiijgj/`. Updated native diagnostics require deploying the newly built native plugin; bundled older ABI-v1 plugins report unavailable optional diagnostics.
 
+## Subsequent central authoring / routing validation
+
+The earlier 81 + 6 playback-parity run above is retained as history. The latest
+isolated Unity 6000.6.9f1 graphics/native-required gate passed **139 EditMode +
+6 PlayMode**, zero skips/failures, including actual-window scene binding, crosspoint
+click/Undo, clipped input, selectors and offline inventory. Evidence:
+`C:/Temp/SFSceneObjectManager-20261118/true-crosspoint-clipping/validation.json`.
+See [Scene Objects](SceneObjectManager.md) and [Audio Routing](AudioRoutingMatrix.md).
+These editor checks do not rebuild the earlier player/release archives or qualify
+physical hardware. The manifest below describes the original playback implementation,
+not every subsequent editor feature file.
+
 ## Exact files changed by Unity implementation
 
 Paths are relative to `C:/dev/UnrealSpatial`.

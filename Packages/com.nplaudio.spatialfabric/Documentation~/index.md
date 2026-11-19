@@ -2,7 +2,17 @@
 
 ## Authoring and routing
 
-Tools → SpatialFabric → Open Window: Stage, Objects, Outputs, Playback, CSV, Diagnostics.
+Tools → SpatialFabric → Open Window: Scene Objects, Stage, Objects, Outputs, Playback, CSV, Diagnostics.
+**Scene Objects** lists all loaded authoring-scene objects (including unconfigured/
+inactive objects), follows Hierarchy selection and supports explicit capability
+attachment and shared real properties with Undo. Normal Inspectors remain available.
+**Outputs** defaults to the true cue-row × interface/channel audio grid; network
+ADM/Custom destinations remain a separate collapsible section. Interface/channel
+selectors are also available on Playback cues. Only explicit **Refresh Interfaces**
+enumerates hardware; exact-ID offline history retains unplugged layouts without
+altering cue routes. Checks show configuration, not live signal. See the repository's
+[Scene Objects](https://github.com/NPLAudio/SpatialFabric-Unity/blob/main/Docs/SceneObjectManager.md)
+and [Audio Routing](https://github.com/NPLAudio/SpatialFabric-Unity/blob/main/Docs/AudioRoutingMatrix.md) guides.
 Create an authored stage/manager, bind selected scene objects, or assign an explicit pose
 transform/label. Bulk sequential IDs/mute and multi-object inspectors are Undoable; prefab
 instance property changes are recorded. No default startup network/audio action; cue runtime startup is explicit opt-in.
@@ -18,7 +28,9 @@ the authored stage or implicitly using camera-eye offsets. Radar projections and
 history reflect authoring transforms, not renderer acknowledgements; clicks select objects.
 
 Owner scene is the default world. Additional loaded scene paths explicitly expand bindings,
-playback and discovery; unrelated scenes remain excluded. Additive listener references also
+runtime playback and discovery; unrelated scenes remain excluded from that runtime
+scope. Central editor lists can browse all loaded authoring scenes without enrolling
+them or changing manager bindings. Additive listener references also
 require stage opt-in. Saved editor identity survives reload; cloned runtime instances have
 unique session keys, including inactive instances. Discovery does not synthesize GUIDs.
 
@@ -76,7 +88,9 @@ physical output. Requested settings and cached actual worker/format state remain
 No AudioSource fallback. Visual walls/OSC positions do not attenuate/spatialize this PCM.
 
 macOS Core Audio source is present, but this Windows host cannot certify its compile or
-hardware behavior. IL2CPP module installation is an administrator prerequisite here.
+hardware behavior. Windows IL2CPP support was installed with approval, and actual
+Development/non-Development IL2CPP validation players passed; arbitrary stripping
+profiles and newly published release archives are separate gates.
 Physical device/fidelity/latency/exclusive/hot-unplug checks remain external. Linux/WebGL
 hardware output is not advertised. See source Native/README.md and validation reports.
 

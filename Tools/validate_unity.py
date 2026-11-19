@@ -33,6 +33,13 @@ def prepare_isolated_project(source, package, target):
     audio.write_text(text,encoding='utf-8')
 
 GRAPHICS_SKIPS={
+    'NPLAudio.SpatialFabric.Tests.SceneObjectManagerTests.ActualWindowFollowsHierarchyAndPaintsLiveSceneChangesWithoutMouseInput':'Requires graphics for actual window rendering',
+    'NPLAudio.SpatialFabric.Tests.SceneObjectManagerTests.ActualRowLabelClickSelectsAndOpensExistingProperties':'Requires graphics for actual window rendering',
+    'NPLAudio.SpatialFabric.Tests.SceneObjectManagerTests.OperatorTabsDiscoverManagerAndPaintExistingUnboundComponents':'Requires graphics for actual window rendering',
+    'NPLAudio.SpatialFabric.Tests.SceneObjectManagerTests.OperatorTabsBrowseWithoutManagerAndRespectCollapsedRows':'Requires graphics for actual window rendering',
+    'NPLAudio.SpatialFabric.Tests.SceneObjectManagerTests.ActualAudioRoutingGridClickIsUndoableAndSurvivesOfflineRefresh':'Requires graphics for actual window rendering',
+    'NPLAudio.SpatialFabric.Tests.SceneObjectManagerTests.ActualAudioDropdownsListCachedInterfacesAndAvailableChannels':'Requires graphics for actual window rendering',
+    'NPLAudio.SpatialFabric.Tests.SceneObjectManagerTests.ActualGridRejectsCellsClippedByTheOuterScrollViewport':'Requires graphics for actual window rendering',
     'NPLAudio.SpatialFabric.Tests.CompletionTests.EveryOperatorPanelRendersWithoutStartupIo':'Panel repaint requires graphics',
     'NPLAudio.SpatialFabric.Tests.RoutingAndProtocolTests.WindowRadarRepaintNeverStartsNetworkingOrPreparesAudio':'Radar UI repaint test requires --graphics',
     'NPLAudio.SpatialFabric.Tests.NetworkLifecycleTests.EditorPauseButtonStillDispatchesQueries':'Editor Pause UI test requires graphics-enabled batch validation (--graphics)',

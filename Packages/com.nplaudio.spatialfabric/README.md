@@ -33,8 +33,9 @@ use synthetic observations, missing sources, and deliberately invalid device IDs
 Acknowledgements remain best-effort UDP, not reliable delivery or proof of audible output.
 
 Windows WASAPI code/native/editor/Mono player validation is local. Core Audio source is
-provided but is **not compiled/validated on this Windows host**. Windows IL2CPP validation
-requires the currently missing editor module (installation needs administrator approval).
+provided but is **not compiled/validated on this Windows host**. Windows IL2CPP support
+was installed with approval; actual Development and non-Development IL2CPP validation
+players passed. This does not certify arbitrary stripping profiles or new releases.
 Physical channels/fidelity/latency/exclusive/device-loss acceptance remains external.
 Do not advertise those gates as passed. See the source repository's VALIDATION.md/PARITY.md.
 
@@ -52,6 +53,21 @@ in the CompleteSource repository snapshot.
 CSV v1 remains compatible; v2 explicitly reassigns exact GUID/localFileId source references
 only on confirmed Apply, with type/hash/stale/live guards and one Undo. Full panels are
 under Tools → SpatialFabric → Open Window. Engine modules are the only runtime dependencies.
+
+## Central scene authoring and audio routing
+
+Open **Tools → SpatialFabric → Open Window**. **Scene Objects** includes ordinary,
+unaltered scene objects and supports explicit capability attachment, live selection,
+real mixed-value properties and Undo. Individual Inspectors remain available.
+**Outputs** defaults to a true cue-row × interface/channel crosspoint grid, with
+selectors also available on expanded Playback cues. Only **Refresh Interfaces**
+enumerates devices; exact-ID cached offline layouts survive unplugging. Checks mean
+configured, not live signal. Scene route edits are guarded and undoable, never
+implicit audio/capture/network activation.
+
+See [Scene Objects](https://github.com/NPLAudio/SpatialFabric-Unity/blob/main/Docs/SceneObjectManager.md)
+and [Audio Routing](https://github.com/NPLAudio/SpatialFabric-Unity/blob/main/Docs/AudioRoutingMatrix.md)
+for scope, protected targets and the 139 EditMode + 6 PlayMode validation gate.
 
 ## Baked paths from Path Studio
 

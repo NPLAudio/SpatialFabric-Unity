@@ -108,7 +108,7 @@ namespace NPLAudio.SpatialFabric.Tests
         {
             if(SystemInfo.graphicsDeviceType==UnityEngine.Rendering.GraphicsDeviceType.Null)Assert.Ignore("Panel repaint requires graphics");
             Add<PlaybackCue>("Cue");var window=EditorWindow.GetWindow<SpatialFabricWindow>();var type=typeof(SpatialFabricWindow);type.GetField("manager",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance).SetValue(window,manager);
-            try{for(int i=0;i<6;++i){type.GetField("tab",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance).SetValue(window,i);window.Repaint();yield return null;yield return null;}Assert.That(manager.IsListening,Is.False);Assert.That(SceneInventory.InScene<PlaybackCue>(scene).All(c=>!c.IsPrepared && !c.IsPlaying),Is.True);}
+            try{for(int i=0;i<7;++i){type.GetField("tab",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance).SetValue(window,i);window.Repaint();yield return null;yield return null;}type.GetField("manager",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance).SetValue(window,null);window.Repaint();yield return null;yield return null;Assert.That(manager.IsListening,Is.False);Assert.That(SceneInventory.InScene<PlaybackCue>(scene).All(c=>!c.IsPrepared && !c.IsPlaying),Is.True);}
             finally{window.Close();}
         }
     }
